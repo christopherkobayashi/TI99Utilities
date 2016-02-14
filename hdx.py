@@ -63,7 +63,9 @@ def build_directory_record(file, ti_fd):
 		c = file_blocks_str[i:i+2]
 		file_blocks_radix.append(chr(int(c)))
 	  else:
-		file_blocks_radix.append(file_blocks_str)
+		x = int(file_blocks_str)
+		y = hex(x)
+		file_blocks_radix.append(chr(x))
 
 	  file_size_str = str(file_size)
 	  if len(file_size_str) % 2 != 0:
@@ -89,44 +91,50 @@ def build_directory_record(file, ti_fd):
 	 # okay, build buffer
 
 	fiad_counter += 1
-	buffer = chr(0x40) + chr(0x00) + chr(0x30 + ti_fd) + chr(0x00)
+	buffer = chr(0x40) + chr(0x00) + chr(0x31) + chr(0x00)
 	buffer += chr(fiad_counter)
 	buffer += chr(0x92) # fixed length
 	buffer += chr(len(ti_filename))
 	buffer += ti_filename
 	buffer += chr(0x08) + chr(0x40)
 	buffer += chr(0x05)  # hardcoding to program for now -- fixme!
-	for i in range(0, 7):
+	for i in range(0, 6):
 	  buffer += chr(0x00)
-	buffer += chr(0x08) + chr(0x40 + len(file_blocks_str)-1)
+	buffer += chr(0x08) + chr(0x40 + (len(file_blocks_str)/2)-1)
 	for i in file_blocks_radix:
 	  buffer += i
-	for i in range(0, 8 - len(file_blocks_radix)):
+	for i in range(0, 7 - len(file_blocks_radix)):
 	  buffer += chr(0x00)
-	buffer += chr(0x08) + chr(0x40 + len(file_size_str)-1)
+	buffer += chr(0x08) + chr(0x40 + (len(file_size_str)/2)-1)
 	for i in file_size_radix:
 	  buffer += i
-	for i in range(0, 8 - len(file_size_radix)):
+	for i in range(0, 7 - len(file_size_radix)):
 	  buffer += chr(0x00)
 
-	for i in range (len(buffer), 0x92):
+	for i in range (len(buffer), 0x98):
 	  buffer += chr(0x00)
-	if debug > 0:
-
-	  for i in buffer:
-		print "Hex: " + i.encode("hex") + " Asc: " + i
-	  print hex(len(buffer))
-	  print
-	  print
+#	if debug > 0:
+#
+#	  for i in buffer:
+#		print "Hex: " + i.encode("hex") + " Asc: " + i
+#	  print hex(len(buffer))
+#	  print
+#	  print
 	return buffer
 
 def serial_write(string):
 	checksum = 0
+        count = 0
 	for i in string:
 	  ser.write(i)
+#	  print hex(count), " - ", i.encode("hex")
 	  checksum += ord(i)
+	  count += 1
 	checksum &= 0xff
 	ser.write(chr(checksum))
+	print " - ", hex(checksum)
+	print
+	print
 	sleep(.2)
 	ser.flushOutput()
 
@@ -142,6 +150,9 @@ ser = serial.Serial(
 command_start = '@'
 command_zero = chr(0x00)
 command_one = chr(0x01)
+command_open = chr(0x30)
+command_close = chr(0x31)
+command_readfile = chr(0x32)
 command_read = chr(0x52)
 command_write = chr(0x57)
 
@@ -176,6 +187,7 @@ while 1:
 	  	print "init: ack sent"
 
 	  elif byte == chr(0x30):
+		filename = ""
 		print "hdx.py: TI request 0x30 '0' (open file)"
 		checksum += ord(byte)
 		byte = ser.read(1)
@@ -192,79 +204,90 @@ while 1:
 		filename_length = ord(byte)
 		for i in range(0, filename_length):
 		  byte = ser.read(1)
+		  filename += byte
 		  checksum += ord(byte)
 		  print byte.encode("hex")
 		byte = ser.read(1)
 		send_chksum = ord(byte)
-		print "checksum: " + byte.encode("hex")
 		checksum = checksum & 0xff
-		print "calculated checksum", hex(checksum)
 
 		ser.flushInput()
 		ser.flushOutput()
 
 		if send_chksum == checksum:
-
 		  print "checksums match, sending ack"
 		  if len(fd_list) >= 8:
 			print "hdx,py: too many fds open, rejecting command"
 			# reject command here
 		  else:
+			serial_write(command_start + command_zero + chr(0x31) + chr(0x92))
 			fd_list.append(filename)
 			fd_index = fd_list.index(filename)
-			serial_write(command_start + command_zero + chr(0x30 + fd_index))
-	  #	  for i in range (3, 100+1):
-	  #  	    byte = ser.read(1)
-	  #	    print str(i) + "- " + byte.encode("hex") + " " + byte
 
-	  elif byte == chr(0x31): # close file
+	  elif byte == command_close: # close file
 		checksum = 0x40
 		checksum += ord(byte)
-		print "hdx.py: TI request "+ command
+		print "hdx.py: TI request close (0x01)"
 		byte = ser.read(1)
 		checksum += ord(byte)
-		fd_close = ord(byte - 0x31)
-		ti_cksum = ser.read(1)
+		fd_close = ord(byte) - 0x31
+		byte = ser.read(1)
+		ti_cksum = ord(byte)
 		checksum = checksum & 0xff
 		if ti_cksum == checksum:
-		  del fd_list[fd_close]
-		  serial_write(command_start + command_zero + chr(fd_close + 0x31))
+		  print "hdx.py: checksums match"
+#		  del fd_list[fd_close]
+		  serial_write(command_start + command_zero + chr(0x31))
+#	  	for i in range(0, 100):
+#	    	  byte = ser.read(1)
+#		  print byte.encode("hex")
+
 	  elif byte == chr(0x32): # read record
 		checksum = 0x40
 		checksum += ord(byte)
-		print "hdx.py: TI request "+ command
+		print "hdx.py: TI request "+ byte
 		byte = ser.read(1)
+	 	print byte.encode("hex")
 		checksum += ord(byte)
-		fd_read = ord(byte - 0x31)
+		fd_read = ord(byte)
+
 		byte = ser.read(1)
+	 	print byte.encode("hex")
 		checksum += ord(byte)
 		record = ord(byte) * 256
 		byte = ser.read(1)
+	 	print byte.encode("hex")
 		checksum += ord(byte)
 		record += ord(byte)
-		filename = fd_list[fd_read]
-		if filename[0] == "." and fd_read == 0:
+
+		print "fd_read: ", fd_read
+#		filename = fd_list[fd_read]
+		filename = "."
+		print "reading record: ", record
+		if filename[0] == "." and record == 0:
+		  print "start of directory"
 		  fiad_counter = 0
-		  sector = command_start + command_zero + chr(fd_read + 0x31))
+		  sector = command_start + command_zero + chr(fd_read)
 		  sector += command_zero + chr(fiad_counter+1) + chr(0x92)
 		  sector += command_zero
 		  sector += chr(0x08)
 		  for i in range(0, 8):
 		    sector += chr(0x00)
-		    sector += chr(0x08) + chr (0x43) + chr(0x08) + chr (0x26) + chr(0x54) + chr(0x50) + command_zero + command_zeo + command_zero
+		  sector += chr(0x08) + chr (0x43) + chr(0x08) + chr (0x26) + chr(0x54) + chr(0x50) + command_zero + command_zero + command_zero
 		  sector += chr(0x08)
 		  for i in range(0, 8):
 		    sector += chr(0x00)
-		    sector += chr(0x08) + chr (0x43) + chr(0x08) + chr (0x26) + chr(0x54) + chr(0x50) + command_zero + command_zero + command_zero
-		    for i in range (len(buffer), 0x92):
-		    buffer += chr(0x00)
+		  sector += chr(0x08) + chr (0x43) + chr(0x08) + chr (0x26) + chr(0x54) + chr(0x50) + command_zero + command_zero + command_zero
+		  for i in range (len(sector), 0x98):
+		    sector += chr(0x00)
 		  serial_write(sector)
-		elif filename[0] == "." and fd_read > 0:
+
+		elif filename[0] == "." and record > 0:
 		  fiad_list = os.listdir(fiad_dir)
 		  for osfile in fiad_list:
 		    sector = build_directory_record(osfile, record)
 		    serial_write(sector)
-		  sector = command_start + command_zero + chr(fd_read + 0x31))
+		  sector = command_start + command_zero + chr(fd_read)
 		  sector += command_zero + chr(fiad_counter+1) + chr(0x92)
 		  sector += command_zero
 		  sector += chr(0x08)
@@ -276,9 +299,14 @@ while 1:
 		  sector += chr(0x08)
 		  for i in range(0, 8):
 		    sector += chr(0x00)
-		  for i in range (len(buffer), 0x92):
-		  buffer += chr(0x00)
+		  for i in range (len(sector), 0x98):
+		    sector += chr(0x00)
 		  serial_write(sector)
+
+#		  for i in range(0, 100):
+#		    byte = ser.read(1)
+#		    print byte.encode("hex")
+
 		  fiad_counter = 0
 
 	  # Opcode "W" -- sector write (one of two routines DSK2PC uses)
