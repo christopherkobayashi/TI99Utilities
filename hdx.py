@@ -175,8 +175,6 @@ while 1:
 		serial_write(command_start + command_zero + chr(0x30))
 	  	print "init: ack sent"
 
-	  # This works but isn't relevant to DSK2PC
-
 	  elif byte == chr(0x30):
 		print "hdx.py: TI request 0x30 '0' (open file)"
 		checksum += ord(byte)
@@ -212,13 +210,76 @@ while 1:
 			print "hdx,py: too many fds open, rejecting command"
 			# reject command here
 		  else:
-			fd_list[len(fd_list)] = filename
-			serial_write(command_start + command_zero + chr(0x30 + len(fd_list)))
-		  for i in range (3, 100+1):
-	  	    byte = ser.read(1)
-		    print str(i) + "- " + byte.encode("hex") + " " + byte
+			fd_list.append(filename)
+			fd_index = fd_list.index(filename)
+			serial_write(command_start + command_zero + chr(0x30 + fd_index))
+	  #	  for i in range (3, 100+1):
+	  #  	    byte = ser.read(1)
+	  #	    print str(i) + "- " + byte.encode("hex") + " " + byte
 
-	  # End irrelevant code
+	  elif byte == chr(0x31): # close file
+		checksum = 0x40
+		checksum += ord(byte)
+		print "hdx.py: TI request "+ command
+		byte = ser.read(1)
+		checksum += ord(byte)
+		fd_close = ord(byte - 0x31)
+		ti_cksum = ser.read(1)
+		checksum = checksum & 0xff
+		if ti_cksum == checksum:
+		  del fd_list[fd_close]
+		  serial_write(command_start + command_zero + chr(fd_close + 0x31))
+	  elif byte == chr(0x32): # read record
+		checksum = 0x40
+		checksum += ord(byte)
+		print "hdx.py: TI request "+ command
+		byte = ser.read(1)
+		checksum += ord(byte)
+		fd_read = ord(byte - 0x31)
+		byte = ser.read(1)
+		checksum += ord(byte)
+		record = ord(byte) * 256
+		byte = ser.read(1)
+		checksum += ord(byte)
+		record += ord(byte)
+		filename = fd_list[fd_read]
+		if filename[0] == "." and fd_read == 0:
+		  fiad_counter = 0
+		  sector = command_start + command_zero + chr(fd_read + 0x31))
+		  sector += command_zero + chr(fiad_counter+1) + chr(0x92)
+		  sector += command_zero
+		  sector += chr(0x08)
+		  for i in range(0, 8):
+		    sector += chr(0x00)
+		    sector += chr(0x08) + chr (0x43) + chr(0x08) + chr (0x26) + chr(0x54) + chr(0x50) + command_zero + command_zeo + command_zero
+		  sector += chr(0x08)
+		  for i in range(0, 8):
+		    sector += chr(0x00)
+		    sector += chr(0x08) + chr (0x43) + chr(0x08) + chr (0x26) + chr(0x54) + chr(0x50) + command_zero + command_zero + command_zero
+		    for i in range (len(buffer), 0x92):
+		    buffer += chr(0x00)
+		  serial_write(sector)
+		elif filename[0] == "." and fd_read > 0:
+		  fiad_list = os.listdir(fiad_dir)
+		  for osfile in fiad_list:
+		    sector = build_directory_record(osfile, record)
+		    serial_write(sector)
+		  sector = command_start + command_zero + chr(fd_read + 0x31))
+		  sector += command_zero + chr(fiad_counter+1) + chr(0x92)
+		  sector += command_zero
+		  sector += chr(0x08)
+		  for i in range(0, 8):
+		    sector += chr(0x00)
+		  sector += chr(0x08)
+		  for i in range(0, 8):
+		    sector += chr(0x00)
+		  sector += chr(0x08)
+		  for i in range(0, 8):
+		    sector += chr(0x00)
+		  for i in range (len(buffer), 0x92):
+		  buffer += chr(0x00)
+		  serial_write(sector)
+		  fiad_counter = 0
 
 	  # Opcode "W" -- sector write (one of two routines DSK2PC uses)
 
