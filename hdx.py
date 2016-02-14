@@ -50,6 +50,7 @@ def build_directory_record(file, ti_fd):
 	  ti_filename = ti_filename.rstrip(' \t\r\n\0')
 	  f.seek(0x0c)
 	  ti_filetype = f.read(1)
+	  f.close()
 	  ti_filetype = 0x05 # ord ti_filetype
 	  file_size = os.path.getsize(fiad_dir+"/"+file) - 128
 
