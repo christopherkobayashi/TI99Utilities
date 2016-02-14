@@ -15,7 +15,7 @@ foad_list = os.listdir(foad_dir)
 fiad_list = os.listdir(fiad_dir)
 fiad_counter = 0
 
-fd_list = list()
+fd_list[]
 
 debug = 1
 
@@ -133,9 +133,9 @@ def serial_write(string):
 	  count += 1
 	checksum &= 0xff
 	ser.write(chr(checksum))
-	print " - ", hex(checksum)
-	print
-	print
+#	print " - ", hex(checksum)
+#	print
+#	print
 	sleep(.2)
 	ser.flushOutput()
 
@@ -187,7 +187,7 @@ while 1:
 		serial_write(command_start + command_zero + chr(0x30))
 	  	print "init: ack sent"
 
-	  elif byte == chr(0x30):
+	  elif byte == command_open:
 		filename = ""
 		print "hdx.py: TI request 0x30 '0' (open file)"
 		checksum += ord(byte)
@@ -212,18 +212,15 @@ while 1:
 		send_chksum = ord(byte)
 		checksum = checksum & 0xff
 
-		ser.flushInput()
-		ser.flushOutput()
-
 		if send_chksum == checksum:
 		  print "checksums match, sending ack"
 		  if len(fd_list) >= 8:
 			print "hdx,py: too many fds open, rejecting command"
 			# reject command here
 		  else:
-			serial_write(command_start + command_zero + chr(0x31) + chr(0x92))
-			fd_list.append(filename)
-			fd_index = fd_list.index(filename)
+			fds_open += 1
+			serial_write(command_start + command_zero + chr(0x30 + fds_open) + chr(0x92))
+			fd_list[fds_open-1] = filename
 
 	  elif byte == command_close: # close file
 		checksum = 0x40
@@ -237,27 +234,21 @@ while 1:
 		checksum = checksum & 0xff
 		if ti_cksum == checksum:
 		  print "hdx.py: checksums match"
-#		  del fd_list[fd_close]
+		  del fd_list[fd_close]
 		  serial_write(command_start + command_zero + chr(0x31))
-#	  	for i in range(0, 100):
-#	    	  byte = ser.read(1)
-#		  print byte.encode("hex")
 
-	  elif byte == chr(0x32): # read record
+	  elif byte == command_readfile: # read record
 		checksum = 0x40
 		checksum += ord(byte)
-		print "hdx.py: TI request "+ byte
+		print "hdx.py: TI request "+ byte.encode("hex")
 		byte = ser.read(1)
-	 	print byte.encode("hex")
 		checksum += ord(byte)
 		fd_read = ord(byte)
 
 		byte = ser.read(1)
-	 	print byte.encode("hex")
 		checksum += ord(byte)
 		record = ord(byte) * 256
 		byte = ser.read(1)
-	 	print byte.encode("hex")
 		checksum += ord(byte)
 		record += ord(byte)
 
