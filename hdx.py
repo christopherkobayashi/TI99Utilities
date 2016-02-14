@@ -15,6 +15,8 @@ foad_list = os.listdir(foad_dir)
 fiad_list = os.listdir(fiad_dir)
 fiad_counter = 0
 
+fd_list = list()
+
 debug = 1
 
 # record 0 (which we return as record +1) contains null filename, "0" as
@@ -206,20 +208,12 @@ while 1:
 		if send_chksum == checksum:
 
 		  print "checksums match, sending ack"
-		  checksum = 0
-	  	  ser.write(chr(0x40))
-		  checksum += 0x40
-	  	  ser.write(chr(0x00))
-		  checksum += 0x00
-	  	  ser.write(chr(0x31))
-		  checksum += 0x31
-		  ser.write(chr(0x92))
-		  checksum += 0x92
-		  checksum = checksum & 0xff
-		  print "calculated checksum", hex(checksum)
-	  	  ser.write(chr(checksum))
-		  sleep(.2)
-	  	  ser.flushOutput()
+		  if len(fd_list) >= 8:
+			print "hdx,py: too many fds open, rejecting command"
+			# reject command here
+		  else:
+			fd_list[len(fd_list)] = filename
+			serial_write(command_start + command_zero + chr(0x30 + len(fd_list)))
 		  for i in range (3, 100+1):
 	  	    byte = ser.read(1)
 		    print str(i) + "- " + byte.encode("hex") + " " + byte
