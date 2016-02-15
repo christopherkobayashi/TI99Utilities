@@ -15,7 +15,8 @@ foad_list = os.listdir(foad_dir)
 fiad_list = os.listdir(fiad_dir)
 fiad_counter = 0
 
-fd_list[]
+fd_list = []
+fds_open = 0
 
 debug = 1
 
@@ -43,53 +44,57 @@ def build_directory_record(file, ti_fd):
 	  file_blocks_str = "0"
 	  file_blocks = 0
 	  file_blocks_radix.append(chr(0x00))
+	  ti_filetype = 6
+
 	  
 	elif os.path.isfile(fullpath) and file[0] != '.':
 	  f = open(fullpath, "rb")
 	  ti_filename = f.read(10)
 	  ti_filename = ti_filename.rstrip(' \t\r\n\0')
 	  f.seek(0x0c)
-	  ti_filetype = f.read(1)
+	  byte = f.read(1)
+	  ti_filetype = ord(byte)
 	  f.close()
-	  ti_filetype = 0x05 # ord ti_filetype
+	  if ti_filetype & 0x01:
+	  	ti_filetype = 0x05 # ord ti_filetype
 	  file_size = os.path.getsize(fiad_dir+"/"+file) - 128
 
 	  file_blocks = file_size / 256
-	  file_blocks_str = str(file_blocks)
-	  if len(file_blocks_str) % 2 != 0:
-	 	file_blocks_str = "0"+file_blocks_str
+	  file_blocks_radix = int_to_radix100(file_blocks)
 
-	  if len(file_blocks_str) > 2:
-	    for i in range (0, len(file_blocks_str), 2):
-		c = file_blocks_str[i:i+2]
-		file_blocks_radix.append(chr(int(c)))
-	  else:
-		x = int(file_blocks_str)
-		y = hex(x)
-		file_blocks_radix.append(chr(x))
+	  file_size_radix = int_to_radix100(file_size)
 
-	  file_size_str = str(file_size)
-	  if len(file_size_str) % 2 != 0:
-	 	file_size_str = "0"+file_size_str
-
-	  for i in range (0, len(file_size_str), 2):
-		c = file_size_str[i:i+2]
-		file_size_radix.append(chr(int(c)))
+#	  file_blocks_str = str(file_blocks)
+#	  if len(file_blocks_str) % 2 != 0:
+#	 	file_blocks_str = "0"+file_blocks_str
+#
+#	  if len(file_blocks_str) > 2:
+#	    for i in range (0, len(file_blocks_str), 2):
+#		c = file_blocks_str[i:i+2]
+#		file_blocks_radix.append(chr(int(c)))
+#	  else:
+#		x = int(file_blocks_str)
+#		y = hex(x)
+#		file_blocks_radix.append(chr(x))
+#
+#	  file_size_str = str(file_size)
+#	  if len(file_size_str) % 2 != 0:
+#	 	file_size_str = "0"+file_size_str
+#
+#	  for i in range (0, len(file_size_str), 2):
+#		c = file_size_str[i:i+2]
+#		file_size_radix.append(chr(int(c)))
 	else:
 	  print "filename is weird, noop"
 	  return ""
 
 	if debug > 0 and ti_filename:
-	  print ti_filename + " ", os.path.getsize(fiad_dir+"/"+file), "blocks: " + file_blocks_str + " size: " + file_size_str
-	  for i in file_blocks_radix:
-	    print " - blocks radix - " + i.encode("hex")
-	  for i in file_size_radix:
-	    print " - size radix - " + i.encode("hex")
+	  print ti_filename + " ", os.path.getsize(fiad_dir+"/"+file), "blocks: ", file_blocks, " size: ", file_size
 
-	 # can easily add the timestamp, as documented but not implemented
-	 # by Fred's application.
+	# can easily add the timestamp, as documented but not implemented
+	# by Fred's application.
 
-	 # okay, build buffer
+	# okay, build buffer
 
 	fiad_counter += 1
 	buffer = chr(0x40) + chr(0x00) + chr(0x31) + chr(0x00)
@@ -98,15 +103,15 @@ def build_directory_record(file, ti_fd):
 	buffer += chr(len(ti_filename))
 	buffer += ti_filename
 	buffer += chr(0x08) + chr(0x40)
-	buffer += chr(0x05)  # hardcoding to program for now -- fixme!
+	buffer += chr(ti_filetype)
 	for i in range(0, 6):
 	  buffer += chr(0x00)
-	buffer += chr(0x08) + chr(0x40 + (len(file_blocks_str)/2)-1)
+	buffer += chr(0x08) + chr(0x40 + (len(file_blocks_radix))-1)
 	for i in file_blocks_radix:
 	  buffer += i
 	for i in range(0, 7 - len(file_blocks_radix)):
 	  buffer += chr(0x00)
-	buffer += chr(0x08) + chr(0x40 + (len(file_size_str)/2)-1)
+	buffer += chr(0x08) + chr(0x40 + (len(file_size_radix))-1)
 	for i in file_size_radix:
 	  buffer += i
 	for i in range(0, 7 - len(file_size_radix)):
@@ -122,6 +127,21 @@ def build_directory_record(file, ti_fd):
 #	  print
 #	  print
 	return buffer
+
+def int_to_radix100(orig_number):
+	  radix = list()
+	  orig_string = str(orig_number)
+	  if len(orig_string) % 2 != 0:
+	 	orig_string = "0"+orig_string
+
+	  if len(orig_string) > 2:
+	    for i in range (0, len(orig_string), 2):
+		c = orig_string[i:i+2]
+		radix.append(chr(int(c)))
+	  else:
+		x = int(orig_string)
+		radix.append(chr(x))
+	  return radix
 
 def serial_write(string):
 	checksum = 0
@@ -139,8 +159,10 @@ def serial_write(string):
 	sleep(.2)
 	ser.flushOutput()
 
+serial_port = '/dev/ttyS1'
+
 ser = serial.Serial(
-    port='/dev/ttyS1',
+    port=serial_port,
     baudrate=38400,
     parity=serial.PARITY_EVEN,
     stopbits=serial.STOPBITS_ONE,
@@ -163,13 +185,14 @@ ser.setDTR(True)
 ser.flushInput()
 ser.flushOutput()
 
-sleep(1)
-
-
 input=1
 last_milli_time = 0
 byte = 0
 command = ""
+
+print
+print "hdx.py listening for commands on " + serial_port
+print
 
 while 1:
 	byte = ser.read(1)
@@ -220,7 +243,8 @@ while 1:
 		  else:
 			fds_open += 1
 			serial_write(command_start + command_zero + chr(0x30 + fds_open) + chr(0x92))
-			fd_list[fds_open-1] = filename
+			print fds_open
+#			fd_list.append = filename
 
 	  elif byte == command_close: # close file
 		checksum = 0x40
@@ -234,7 +258,9 @@ while 1:
 		checksum = checksum & 0xff
 		if ti_cksum == checksum:
 		  print "hdx.py: checksums match"
-		  del fd_list[fd_close]
+		  fds_open -= 1
+		  print fd_close
+#		  del fd_list[fd_close]
 		  serial_write(command_start + command_zero + chr(0x31))
 
 	  elif byte == command_readfile: # read record
