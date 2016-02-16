@@ -146,6 +146,34 @@ def int_to_radix100(orig_number):
 		radix.append(chr(x))
 	  return radix
 
+def calc_checksum(buffer):
+	checksum = 0
+	for i in range(0, len(buffer)-1):
+	  checksum += ord(buffer[i])
+	checksum &= 0xff
+	ti_checksum = ord(buffer[len(buffer)-1])
+	if checksum == ti_checksum:
+	  print "calc_checksum: match"
+	  return 1
+	else:
+	  print "calc_checksum: MISMATCH"
+	  return 0
+
+def serial_read(command, count, header=0):
+	buffer = ""
+	if header != 0:
+	  buffer = chr(0x40)
+	  buffer += command
+	for i in range(0, count):
+	  byte = ser.read(1)
+	  if not byte:
+	    print "hdx.py: serial_read stopped at ", i
+	    continue
+	  else:
+	    print byte.encode("hex")
+            buffer += byte
+	return buffer
+
 def serial_write(string):
 	global last_command
 
@@ -154,14 +182,14 @@ def serial_write(string):
 
 	for i in string:
 	  ser.write(i)
-#	  print hex(count), " - ", i.encode("hex")
+	  print hex(count), " - ", i.encode("hex")
 	  checksum += ord(i)
 	  count += 1
 	checksum &= 0xff
 	ser.write(chr(checksum))
-#	print " - ", hex(checksum)
-#	print
-#	print
+	print " - ", hex(checksum)
+	print
+	print
 	sleep(.2)
 	ser.flushOutput()
 	last_command = string
@@ -170,39 +198,30 @@ def command_close():
 	global fd_list
 	global fds_open
 
-	checksum = 0x40
-	checksum += ord(command_close_byte)
 	print "hdx.py: TI request close (0x01)"
-	byte = ser.read(1)
-	checksum += ord(byte)
-	fd_close = ord(byte) - 0x31
-	byte = ser.read(1)
-	ti_cksum = ord(byte)
-	checksum = checksum & 0xff
-	if ti_cksum == checksum:
-	  print "hdx.py: checksums match"
-	  fds_open -= 1
-	  print fd_close
-#	  del fd_list[fd_close]
-	  serial_write(command_start + command_zero + chr(0x31))
+
+	buffer = serial_read(command_close_byte, 2, 1)
+	if calc_checksum(buffer) == 0:
+	  sys.exit()
+
+	serial_write(command_start + command_zero + chr(0x31))
+
+#	fds_open -= 1
+#	print fd_close
+#	del fd_list[fd_close]
 
 def command_readfile():
 	global fd_list 
 	global fiad_counter
 
-	checksum = 0x40
-	checksum += ord(command_readfile_byte)
 	print "hdx.py: TI request command_readfile"
-	byte = ser.read(1)
-	checksum += ord(byte)
-	fd_read = ord(byte)
+	buffer = serial_read(command_readfile_byte, 4, 1)
+	fd_read = ord(buffer[2])
+	record = ( ord(buffer[3]) * 256) + ord(buffer[4])
+	print record
 
-	byte = ser.read(1)
-	checksum += ord(byte)
-	record = ord(byte) * 256
-	byte = ser.read(1)
-	checksum += ord(byte)
-	record += ord(byte)
+	if calc_checksum(buffer) == 0:
+	  sys.exit()
 
 #	filename = fd_list[fd_read]
 	filename = "."
@@ -244,6 +263,7 @@ def command_readfile():
 	  for i in range (len(sector), 0x98):
 	    sector += chr(0x00)
 	  serial_write(sector)
+	  fiad_counter = 0	# reset directory pointer
 
 def command_readwrite(byte):
 	command = byte
@@ -311,48 +331,42 @@ def command_open():
 	global fd_list
 	global fds_open
 
-	checksum = 0x40
 	filename = ""
 	print "hdx.py: TI request 0x30 '0' (open file)"
-	checksum += ord(command_open_byte)
-	byte = ser.read(1)
-	checksum += ord(byte)
-  	print byte.encode("hex")
-	flags = byte
-	byte = ser.read(1)
-	checksum += ord(byte)
-	print byte.encode("hex")
-	record_length = ord(byte)
-	byte = ser.read(1)
-	checksum += ord(byte)
-	print byte.encode("hex")
-	filename_length = ord(byte)
-	for i in range(0, filename_length):
-	  byte = ser.read(1)
-	  filename += byte
-	  checksum += ord(byte)
-	  print byte.encode("hex")
-	byte = ser.read(1)
-	send_chksum = ord(byte)
-	checksum = checksum & 0xff
 
-	if send_chksum == checksum:
-	  print "checksums match, sending ack"
-	  if len(fd_list) >= 8:
-		print "hdx,py: too many fds open, rejecting command"
-		# reject command here
+	buffer = serial_read(command_open_byte, 3, 1)
+
+	flags = ord(buffer[2])
+	record_length = ord(buffer[3])
+	filename_length = ord(buffer[4])
+
+	if filename_length > 0:
+	  buffer += serial_read(command_open_byte, filename_length+1) #chksum
+	  filename = buffer[5:filename_length+5]
+	  print "opening filename: " + filename
+
+	if calc_checksum(buffer) == 0:
+	  sys.exit()
+
+	print "checksums match, sending ack"
+	if len(fd_list) >= 8:
+	  print "hdx,py: too many fds open, rejecting command"
+	  # reject command here
+	else:
+	  fds_open += 1
+	  serial_write(command_start + command_zero + chr(0x30 + fds_open) + chr(0x92))
+	  print fds_open
+	  if filename_length > 0 and filename[len(filename) - 1] == ".":
+	    print "open: doing directory, not really opening fd, building fiad_list"
+	    fiad_list = os.listdir(fiad_dir)
+	    fiad_counter = 0
+	    fd = None
+	  elif filename_length > 0:
+	    fd = open(fiad_dir + "/" + filename, "rb")
+	    fd_list.append([ 0x30 + fds_open, fd, "", filename ])
 	  else:
-		fds_open += 1
-		serial_write(command_start + command_zero + chr(0x30 + fds_open) + chr(0x92))
-		print fds_open
-		if filename[len(filename) - 1] == ".":
-		  print "open: doing directory, not really opening fd, building fiad_list"
-		  fiad_list = os.listdir(fiad_dir)
-	  	  fiad_counter = 0
-		  fd = None
-		else:
-		  fd = open(fiad_dir + "/" + filename, "rb")
-		fd_list.append([ 0x30 + fds_open, fd, "", filename ])
+	    print "command_open: no filelength?!?"
+	    sys.exit()
 
 
 ser.isOpen()
@@ -379,11 +393,13 @@ while 1:
 	  byte = ser.read(1)
 	  if byte == chr(0x56):
 		print "hdx.py: DSR probed us for init"
-		while byte != chr(0x99): # hardcode checksum, won't change
-	  	  byte = ser.read(1)
-	  	  command = command + byte
-		serial_write(command_start + command_zero + chr(0x30))
-	  	print "init: ack sent"
+		buffer = serial_read(chr(0x56), 3)
+		if buffer[len(buffer)-1] != chr(0x99):
+		  print "probe was garbage, ignoring"
+		  continue
+		else:
+	          serial_write(command_start + command_zero + chr(0x30))
+ 	  	  print "init: ack sent"
 
 	  # Opcode "0" - open file for subsequent reading (set up list, prolly)
 	  elif byte == command_open_byte:
