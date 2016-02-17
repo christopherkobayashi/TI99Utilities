@@ -32,7 +32,8 @@ ser = serial.Serial(
     parity=serial.PARITY_EVEN,
     stopbits=serial.STOPBITS_ONE,
     bytesize=serial.EIGHTBITS,
-    dsrdtr=False
+    rtscts=True
+#    timeout=0
 )
 
 command_start = '@'
@@ -153,10 +154,9 @@ def calc_checksum(buffer):
 	checksum &= 0xff
 	ti_checksum = ord(buffer[len(buffer)-1])
 	if checksum == ti_checksum:
-	  print "calc_checksum: match"
 	  return 1
 	else:
-	  print "calc_checksum: MISMATCH"
+	  print "calc_checksum: MISMATCH", hex(checksum), hex(ti_checksum)
 	  return 0
 
 def serial_read(command, count, header=0):
@@ -170,7 +170,7 @@ def serial_read(command, count, header=0):
 	    print "hdx.py: serial_read stopped at ", i
 	    continue
 	  else:
-	    print byte.encode("hex")
+#	    print "count: ", i, "value: " + byte.encode("hex")
             buffer += byte
 	return buffer
 
@@ -182,17 +182,22 @@ def serial_write(string):
 
 	for i in string:
 	  ser.write(i)
-	  print hex(count), " - ", i.encode("hex")
+#	  print hex(count), " - ", i.encode("hex")
 	  checksum += ord(i)
 	  count += 1
 	checksum &= 0xff
 	ser.write(chr(checksum))
-	print " - ", hex(checksum)
-	print
-	print
+#	print " - ", hex(checksum)
+#	print
+#	print
 	sleep(.2)
 	ser.flushOutput()
 	last_command = string
+
+def serial_retrans():
+	print "sending retransmit"
+	ser.write("#")
+	ser.flushOutput
 
 def command_close():
 	global fd_list
@@ -269,62 +274,54 @@ def command_readwrite(byte):
 	command = byte
 	filename = ""
 	sector = ""
+	file = ""
 
-	checksum = 0x40
-	checksum += ord(command)
-	print "hdx.py: TI request "+ command
-	byte = ser.read(1)
-	checksum += ord(byte)
-	byte_count_hi = ser.read(1)
-	checksum += ord(byte_count_hi)
-	byte_count_lo = ser.read(1)
-	checksum += ord(byte_count_lo)
-	byte_count = (ord(byte_count_hi) * 256) + ord(byte_count_lo)
-	for i in range(5, 15):
-	  byte = ser.read(1)
-	  checksum += ord(byte)
-	  filename += byte
-	filename = filename.rstrip(' \t\r\n\0')
+	if command == command_read_byte:
+	  readin = 16
+	else:
+	  readin = 15
+
+	sector = serial_read(command, readin, 1)
+	byte_count = ( ord(sector[3]) * 256) + ord(sector[4])
+	filename = sector[5:14].rstrip(' \t\r\n\0')
+	sec_number = (ord(sector[15]) * 256) + ord(sector[16])
+
 	print "hdx.py: filename: " + filename
-	sec_number_hi = ser.read(1)
-	checksum += ord(sec_number_hi)
-	sec_number_lo = ser.read(1)
-	checksum += ord(sec_number_lo)
-	sec_number = (ord(sec_number_hi) * 256) + ord(sec_number_lo)
 	print "hdx.py: sector number ", sec_number
 
 	if command == command_write_byte:
+	  sector += serial_read(command, 256+1) # snarf checksum too
+	  if calc_checksum(sector) == 0:
+	    print "hdx.py: TI request "+ command + "sector", sector, "checksum failure"
+	    serial_retrans()
+	    f.close()
+	    return
 	  if sec_number == 0:
 	    f = open(foad_dir + "/" + filename + ".dsk", "wb")
 	  else:
 	    f = open(foad_dir + "/" + filename + ".dsk", "ab")
 
+	  f.write(sector[17:256+17])
+	  f.flush()
+	  serial_write(command_start + command_zero)
+	elif command == command_read_byte:
+	  if calc_checksum(sector) == 0:
+	    print "hdx.py: TI request "+ command + "sector", sector, "checksum failure"
+	    serial_retrans()
+	    return
+	  sector = command_start + command_one + command_zero
+	  f = open(foad_dir + "/" + filename + ".dsk", "rb")
+	  f.seek(sec_number * 256)
 	  for i in range (0, 256):
-	    byte = ser.read(1)
-	    checksum += ord(byte)
-	    sector += byte
-
-	byte = ser.read(1)
-	ti_checksum = ord(byte)
-	checksum &= 0xff
-
-	if checksum == ti_checksum:
-	  if command == command_write_byte:
-	    serial_write(command_start + command_zero)
-	    f.write(sector)
-	  elif command == command_read_byte:
-	    sector = command_start + command_one + command_zero
-	    f = open(foad_dir + "/" + filename + ".dsk", "rb")
-	    f.seek(sec_number * 256)
-	    for i in range (0, 256):
-	      byte = f.read(1)
-	      if not byte:
+	    byte = f.read(1)
+	    if not byte:
 		print filename + ".dsk is truncated!"
 		f.close()
 		break
-	      sector += byte
-	    serial_write(sector)
-		
+	    sector += byte
+	  serial_write(sector)
+	    
+	if f:		
 	  f.close()
 
 def command_open():
@@ -374,8 +371,6 @@ ser.setDTR(True)
 ser.flushInput()
 ser.flushOutput()
 
-input=1
-last_milli_time = 0
 byte = 0
 command = ""
 
@@ -403,18 +398,22 @@ while 1:
 
 	  # Opcode "0" - open file for subsequent reading (set up list, prolly)
 	  elif byte == command_open_byte:
+	        print "hdx.py: TI request "+ byte.encode("hex")
 		command_open()
 
 	  # Opcode "1" - close file (should tidy fds if possible)
 	  elif byte == command_close_byte: # close file
+	        print "hdx.py: TI request "+ byte.encode("hex")
 		command_close()
 
 	  # Opcode "2" - read up to 256 bytes from file
 	  elif byte == command_readfile_byte: # read record
+	        print "hdx.py: TI request "+ byte.encode("hex")
 		command_readfile()
 
 	  # Opcodes R and W -- used by DSK2PC
 	  elif byte == command_read_byte or byte == command_write_byte:
+	        print "hdx.py: TI request "+ byte.encode("hex")
 		command_readwrite(byte)
 
 	  # Retransmit your last
@@ -423,5 +422,4 @@ while 1:
 		ser_write(last_command)
 
 	  else:
-		if byte != chr(00):
-		  print "hdx.py: unsupported command " + byte.encode("hex")
+		print "hdx.py: unsupported command " + byte.encode("hex")
