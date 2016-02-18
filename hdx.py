@@ -46,7 +46,8 @@ command_readfile_byte = chr(0x32)
 command_read_byte = chr(0x52)
 command_write_byte = chr(0x57)
 command_setpath_byte = 'c'
-command_reqfileinfo_byte = '5'
+command_req_fileinfo_byte = '5'
+command_req_direct_input_file = 'r'
 
 # record 0 (which we return as record +1) contains null filename, "0" as
 # filetype, BIGNUM as blocks used, same BIGNUM as filesize, then 00 and "524288"
@@ -65,12 +66,30 @@ def find_file_in_path(filename):
 	  elif os.path.isfile(fiad_dir + "/" + candidate):
 	    temp = detect_file(candidate)
 	    if temp[0]:
-	    return temp
+	      if temp[0] == filename:
+	        print "hdx.py: find_file_in_path: found! " + temp[1]
+	        return temp
 
 	return [ None, None, None ]
 
+def file_type_convert(type):
+	if type == 1:
+	  return 5
+	if type == 6:
+	  return 6
+	else:
+	  return 4
+
 def detect_file(file):
-	  # check TIFILES first, then FIAD
+	  print "detect_file: " + file
+	  # insert autoconversion (.txt, obj, etc) here
+	  print "checking TXT"
+	  if file[-4:] == ".txt" or file[-4:] == ".TXT":
+	    type = 1 # DIS/VAR80 always ...
+	    filename = file[:-4].upper()
+	    return [ filename, fiad_dir + "/" + file, type, 0]
+
+	  # okay, extensions done, check TIFILES first, then FIAD
 	  f = open(fiad_dir + "/" + file, "rb")
 	  string = f.read(8)
 	  print "checking TIFILES"
@@ -78,24 +97,26 @@ def detect_file(file):
 	    f.seek(0x10)
 	    filename = f.read(10).rstrip(' \t\r\n\0')
 	    f.seek(0x0a)
-	    type = ord(f.read(1))
+	    type = file_type_convert(ord(f.read(1)))
 	    f.close()
-	    return ([ filename, fiad_dir + "/" + candidate, type ])
+	    return ([ filename, fiad_dir + "/" + file, type, 128 ])
 	  
 	  # rewind, check for FIAD
 	  print "checking FIAD"
 	  f.seek(0)
+	  f = open(fiad_dir + "/" + file, "rb")
 	  filename = f.read(10).rstrip(' \t\r\n\0')
-	  if all(ord(c) < 127 and c in string.printable for c in filename):
+	  if all(ord(c) < 127 and ord(c) > 0x19 for c in filename):
 	    f.seek(0x0c)
-	    type = ord(f.read(1))
+	    type = file_type_convert(ord(f.read(1)))
 	    f.close()
-	    return ([ filename, fiad_dir + "/" + candidate, type ])		
+	    return ([ filename, fiad_dir + "/" + file, type, 128 ])		
 
-	  # insert autoconversion (.txt, obj, etc) here
+	  if f:
+	    f.close()
 
 	  # not a TI parseable file
-	    return [ None, None, None]
+	  return [ None, None, None]
 
 
 def build_directory_record(file, ti_fd):
@@ -118,9 +139,9 @@ def build_directory_record(file, ti_fd):
 	  file_temp = detect_file(file)
 	  ti_filename = file_temp[0]
 	  ti_filetype = file_temp[2]
-	  if ti_filetype & 0x01:
-	  	ti_filetype = 0x05 # ord ti_filetype
-	  file_size = os.path.getsize(fiad_dir+"/"+file) - 128
+#	  if ti_filetype & 0x01:
+#	  	ti_filetype = 0x05 # ord ti_filetype
+	  file_size = os.path.getsize(fiad_dir+"/"+file) - file_temp[3]
 
 	  file_blocks = file_size / 256
 	  file_blocks_radix = int_to_radix100(file_blocks)
@@ -254,27 +275,64 @@ def command_close():
 #	print fd_close
 #	del fd_list[fd_close]
 
-def command_setpath(path):
+def command_setpath():
 	global fiad_dir
 	global foad_dir
 
 	print "hdx.py: TI request command_setpath"
-	buffer = serial_read(command_readfile_byte, 4, 1)
+	buffer = serial_read(command_setpath_byte, 4, 1)
 	length = ( ord(buffer[3]) * 256) + ord(buffer[4])
-	buffer += serial_read(command_readfile_byte, length+1)
-
+	buffer += serial_read(command_setpath_byte, length)
+	
 	if calc_checksum(buffer) == 0:
 	    print "hdx.py: TI request command_setpath checksum failure"
 	    serial_retrans()
 	    return
 
 	dir = buffer[5:length+5].rstrip(' \t\r\n\0')
-	fiad_dir = dir
+	print "hdx.py: path " + dir
+#	fiad_dir = dir
 #	foad_dir = dir
 
 	serial_write(command_start + command_zero)
 	print "hdx.py: TI request command_setpath " + dir
 
+def command_read_direct_file(command):
+	print "hdx.py: TI request read_message"
+	buffer = serial_read(command, 14, 1)
+	for i in buffer:
+	  print " - " + i.encode("hex")
+	print
+
+	if calc_checksum(buffer) == 0:
+	  print "hdx.py: TI request command_read_direct_file checksum failure"
+	  serial_retrans()
+	  return
+	sec_hi = ord(buffer[3])
+	sec_lo = ord(buffer[4])
+	sectors = ( sec_hi * 256) + sec_lo
+	filename = buffer[5:15].rstrip(' \t\r\n\0')
+	print "hdx.py: TI request blah looking for " + filename
+	temp = find_file_in_path(filename)
+	if temp:
+	  # file found, construct reply etc.
+	  print "file found"
+	  filename = temp[1]
+	  filesize = os.path.getsize(filename) - temp[3]
+
+	  buffer = command_start + command_zero
+	  buffer += chr(0x0c) # hardcoded length per protocol
+	  sec_hi = (filesize / 256) & 0xff00
+	  sec_lo = (filesize / 256) & 0x00ff
+	  buffer += chr(sec_hi) + chr(sec_lo)
+	  buffer += chr(0x01) # file flags ... what should this be?a
+	  for i in range(1, 10):
+	    buffer += chr(0x00)
+	  print "writing buffer"
+	  serial_write(buffer)
+	else:
+	  print "file not found"
+	  serial_write(command_start + command_zero + command_zero)
 
 def command_readfile():
 	global fd_list 
@@ -504,9 +562,13 @@ while 1:
 		print "hdx.py: TI request command_setpath"
 		command_setpath()
 
-	  # Opcode 5 -- request file information (for "load program")
+	  # Opcode 5 -- request file information
 	  elif byte == command_req_fileinfo_byte:
 		command_reqfileinfo()
+
+	  # Opcode r -- read file message
+	  elif byte == command_req_direct_input_file:	
+		command_read_direct_file(byte)
 
 	  # Retransmit your last
 	  elif byte == "#":
