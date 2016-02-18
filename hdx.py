@@ -69,12 +69,12 @@ def find_file_in_path(filename):
 
 	return [ None, None, None ]
 
-def detect_file(candidate):
+def detect_file(file):
 	  # check TIFILES first, then FIAD
-	  f = open(fiad_dir + "/" + candidate, "rb")
+	  f = open(fiad_dir + "/" + file, "rb")
 	  string = f.read(8)
-	  print "checking TIFILES " + string[1:8] + " ", len(string[1:8])
-	  if string[1:8] == "TIFILES":
+	  print "checking TIFILES"
+	  if string[0:8] == chr(0x07) + "TIFILES":
 	    f.seek(0x10)
 	    filename = f.read(10).rstrip(' \t\r\n\0')
 	    f.seek(0x0a)
