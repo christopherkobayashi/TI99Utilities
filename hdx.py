@@ -5,6 +5,7 @@ from time import sleep
 import serial
 import sys
 import os
+import string
 
 fiad_dir = "/home/wileyc/ti/hdx/fiad"
 foad_dir = "/home/wileyc/ti/hdx/foad"
@@ -34,7 +35,6 @@ ser = serial.Serial(
     stopbits=serial.STOPBITS_ONE,
     bytesize=serial.EIGHTBITS,
     rtscts=True
-#    timeout=0
 )
 
 command_start = '@'
@@ -86,10 +86,17 @@ def detect_file(file):
 	  print "checking FIAD"
 	  f.seek(0)
 	  filename = f.read(10).rstrip(' \t\r\n\0')
-	  f.seek(0x0c)
-	  type = ord(f.read(1))
-	  f.close()
-	  return ([ filename, fiad_dir + "/" + candidate, type ])		
+	  if all(ord(c) < 127 and c in string.printable for c in filename):
+	    f.seek(0x0c)
+	    type = ord(f.read(1))
+	    f.close()
+	    return ([ filename, fiad_dir + "/" + candidate, type ])		
+
+	  # insert autoconversion (.txt, obj, etc) here
+
+	  # not a TI parseable file
+	    return [ None, None, None]
+
 
 def build_directory_record(file, ti_fd):
 	global fiad_counter
