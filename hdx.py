@@ -17,6 +17,7 @@ fiad_counter = 0
 
 # Array should be "TI file descriptor", "local FD", "local filename", "ti filename"
 
+filename_list = []
 fd_list = []
 fds_open = 0
 
@@ -39,11 +40,13 @@ ser = serial.Serial(
 command_start = '@'
 command_zero = chr(0x00)
 command_one = chr(0x01)
-command_open_byte = chr(0x30)
-command_close_byte = chr(0x31)
+command_open_byte = '0'
+command_close_byte = '1'
 command_readfile_byte = chr(0x32)
 command_read_byte = chr(0x52)
 command_write_byte = chr(0x57)
+command_setpath_byte = 'c'
+command_reqfileinfo_byte = '5'
 
 # record 0 (which we return as record +1) contains null filename, "0" as
 # filetype, BIGNUM as blocks used, same BIGNUM as filesize, then 00 and "524288"
@@ -130,6 +133,7 @@ def build_directory_record(file, ti_fd):
 #	  print hex(len(buffer))
 #	  print
 #	  print
+	filename_list.append([ ti_filename, fullpath] )
 	return buffer
 
 def int_to_radix100(orig_number):
@@ -215,8 +219,31 @@ def command_close():
 #	print fd_close
 #	del fd_list[fd_close]
 
+def command_setpath(path):
+	global fiad_dir
+	global foad_dir
+
+	print "hdx.py: TI request command_setpath"
+	buffer = serial_read(command_readfile_byte, 4, 1)
+	length = ( ord(buffer[3]) * 256) + ord(buffer[4])
+	buffer += serial_read(command_readfile_byte, length+1)
+
+	if calc_checksum(buffer) == 0:
+	    print "hdx.py: TI request command_setpath checksum failure"
+	    serial_retrans()
+	    return
+
+	dir = buffer[5:length+5].rstrip(' \t\r\n\0')
+	fiad_dir = dir
+#	foad_dir = dir
+
+	serial_write(command_start + command_zero)
+	print "hdx.py: TI request command_setpath " + dir
+
+
 def command_readfile():
 	global fd_list 
+	global filename_list
 	global fiad_counter
 
 	print "hdx.py: TI request command_readfile"
@@ -233,6 +260,8 @@ def command_readfile():
 	print "reading record: ", record
 	if filename[0] == "." and record == 0:
 	  print "start of directory"
+	  filename_list = []
+	  fd_list = []
 	  sector = command_start + command_zero + chr(fd_read)
 	  sector += command_zero + chr(record+1) + chr(0x92)
 	  sector += command_zero
@@ -269,6 +298,10 @@ def command_readfile():
 	    sector += chr(0x00)
 	  serial_write(sector)
 	  fiad_counter = 0	# reset directory pointer
+
+	  if debug > 0:
+	    for file in filename_list:
+	 	print file
 
 def command_readwrite(byte):
 	command = byte
@@ -416,10 +449,19 @@ while 1:
 	        print "hdx.py: TI request "+ byte.encode("hex")
 		command_readwrite(byte)
 
+	  # Opcode c -- set current path name
+	  elif byte == command_setpath_byte:
+		print "hdx.py: TI request command_setpath"
+		command_setpath()
+
+	  # Opcode 5 -- request file information (for "load program")
+	  elif byte == command_req_fileinfo_byte:
+		command_reqfileinfo()
+
 	  # Retransmit your last
 	  elif byte == "#":
-		print "Retransmitting"
-		ser_write(last_command)
+		print "hdx.py: TI request retransmit"
+		ser.write(last_command)
 
 	  else:
 		print "hdx.py: unsupported command " + byte.encode("hex")

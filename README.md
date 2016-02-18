@@ -3,6 +3,12 @@
 This is a collection of command-line utilities that do various things with
 TI-99/4A files.
 
+hdx.py:		cross-platform HDX server.  Supports both FIAD and TIFILES
+		file formats, automatically converts text files to DV80
+		(and vice-versa).  Needs the pyserial python module.  See
+		http://www.ti99-geek.nl/Projects/ti99hdx/ti99hdx_server.html
+		for the Windows-only program that this replaces.
+
 ti_bin_to_wav:	converts TI binary file to WAV file suitable for reading via
 		cassette port.  Output is a 48kHz stereo WAV file constructed
 		from sine waves.
