@@ -55,6 +55,41 @@ command_reqfileinfo_byte = '5'
 # final record is "000000" for every field, except for "03 07 14" at the end.
 # it's copied from the previous file -- is Fred not initializing?
 
+# This routine parses everything in the current directory looking for a match
+def find_file_in_path(filename):
+	files = os.listdir(fiad_dir)
+
+	for candidate in files:
+	  if os.path.isdir(fiad_dir + "/" + candidate):
+	    return ([ filename, fiad_dir + "/" + candidate, 6 ])
+	  elif os.path.isfile(fiad_dir + "/" + candidate):
+	    temp = detect_file(candidate)
+	    if temp[0]:
+	    return temp
+
+	return [ None, None, None ]
+
+def detect_file(candidate):
+	  # check TIFILES first, then FIAD
+	  f = open(fiad_dir + "/" + candidate, "rb")
+	  string = f.read(8)
+	  print "checking TIFILES " + string[1:8] + " ", len(string[1:8])
+	  if string[1:8] == "TIFILES":
+	    f.seek(0x10)
+	    filename = f.read(10).rstrip(' \t\r\n\0')
+	    f.seek(0x0a)
+	    type = ord(f.read(1))
+	    f.close()
+	    return ([ filename, fiad_dir + "/" + candidate, type ])
+	  
+	  # rewind, check for FIAD
+	  print "checking FIAD"
+	  f.seek(0)
+	  filename = f.read(10).rstrip(' \t\r\n\0')
+	  f.seek(0x0c)
+	  type = ord(f.read(1))
+	  f.close()
+	  return ([ filename, fiad_dir + "/" + candidate, type ])		
 
 def build_directory_record(file, ti_fd):
 	global fiad_counter
@@ -66,23 +101,16 @@ def build_directory_record(file, ti_fd):
 
 	if os.path.isdir(fullpath):
 	  ti_filename = file
-	  file_size_str = "0"
-	  file_size = 0
 	  file_size_radix.append(chr(0x00))
-	  file_blocks_str = "0"
-	  file_blocks = 0
 	  file_blocks_radix.append(chr(0x00))
+	  file_blocks = 0
+	  file_size = 0
 	  ti_filetype = 6
-
 	  
 	elif os.path.isfile(fullpath) and file[0] != '.':
-	  f = open(fullpath, "rb")
-	  ti_filename = f.read(10)
-	  ti_filename = ti_filename.rstrip(' \t\r\n\0')
-	  f.seek(0x0c)
-	  byte = f.read(1)
-	  ti_filetype = ord(byte)
-	  f.close()
+	  file_temp = detect_file(file)
+	  ti_filename = file_temp[0]
+	  ti_filetype = file_temp[2]
 	  if ti_filetype & 0x01:
 	  	ti_filetype = 0x05 # ord ti_filetype
 	  file_size = os.path.getsize(fiad_dir+"/"+file) - 128
@@ -253,12 +281,14 @@ def command_readfile():
 	print record
 
 	if calc_checksum(buffer) == 0:
-	  sys.exit()
+	  print "hdx.py: TI request command_readfile checksum failure"
+	  serial_retrans()
+	  return
 
-#	filename = fd_list[fd_read]
-	filename = "."
 	print "reading record: ", record
-	if filename[0] == "." and record == 0:
+
+	filename = "." # override!
+	if filename[len(filename)-1] == "." and record == 0:
 	  print "start of directory"
 	  filename_list = []
 	  fd_list = []
@@ -268,19 +298,32 @@ def command_readfile():
 	  sector += chr(0x08)
 	  for i in range(0, 8):
 	    sector += chr(0x00)
-	  sector += chr(0x08) + chr (0x43) + chr(0x08) + chr (0x26) + chr(0x54) + chr(0x50) + command_zero + command_zero + command_zero
+
+	  temp = int_to_radix100( 8388480 )
+
+	  sector += chr(0x08) + chr(0x40 + (len(temp)-1))
+	  for i in temp:
+	    sector += i
+	  sector += chr(0) + chr(0) + chr(0)
 	  sector += chr(0x08)
 	  for i in range(0, 8):
 	    sector += chr(0x00)
-	  sector += chr(0x08) + chr (0x43) + chr(0x08) + chr (0x26) + chr(0x54) + chr(0x50) + command_zero + command_zero + command_zero
+
+	  sector += chr(0x08) + chr(0x40 + (len(temp)-1))
+	  for i in temp:
+	    sector += i
+	  sector += chr(0) + chr(0) + chr(0)
+
 	  for i in range (len(sector), 0x98):
 	    sector += chr(0x00)
+	  for i in sector:
+		print " - ", i.encode("hex")
 	  serial_write(sector)
 
-	elif filename[0] == "." and record > 0 and record <= len(fiad_list):
+	elif filename[len(filename)-1] == "." and record > 0 and record <= len(fiad_list):
 	  sector = build_directory_record(fiad_list[record-1], record)
 	  serial_write(sector)
-	elif filename[0] == "." and record > len(fiad_list):
+	elif filename[len(filename)-1] == "." and record > len(fiad_list):
 	  print "sending end of directory"
 	  sector = command_start + command_zero + chr(fd_read)
 	  sector += command_zero + chr(record+1) + chr(0x92)
