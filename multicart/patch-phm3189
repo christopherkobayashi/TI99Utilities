@@ -1,0 +1,46 @@
+#! /usr/bin/python2.7
+
+# Return to Pirate's Isle -- PHM3189
+
+GROM_BASE=3
+EPROM_BASE=2
+MODULE="phm3189"
+
+with file(MODULE+"c.bin", 'r+b') as fh:
+    fh.seek(0x01cb)
+    fh.write( chr(GROM_BASE * 4))
+    fh.seek(0x01d9)
+    fh.write( chr(GROM_BASE * 4))
+    fh.seek(0x01e3)
+    fh.write( chr(GROM_BASE * 4))
+
+    fh.seek(0x128a)
+    fh.write( chr(0x00))
+
+    fh.seek(0x19d0)
+    fh.write( chr(0x00))
+    fh.seek(0x19dc)
+    fh.write( chr(0x00))
+    fh.seek(0x19e4)
+    fh.write( chr(0x00))
+
+    fh.seek(0x1a3a)
+    fh.write( chr(0x00))
+    fh.seek(0x1a42)
+    fh.write( chr(0x00))
+
+fh.close
+
+with file(MODULE+"g.bin", 'r+b') as fh:
+    fh.seek(0x2000)
+    if GROM_BASE == 0:
+      fh.write( chr(0xaa))
+      fh.write( chr(0x01))
+    else:
+      fh.write( chr(0xa5))
+      fh.write( chr(0x5a))
+
+    fh.seek(0x2003)
+    fh.write( chr(EPROM_BASE) )
+
+fh.close

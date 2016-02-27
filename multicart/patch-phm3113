@@ -1,0 +1,27 @@
+#! /usr/bin/python2.7
+
+# Multiplan GROM itself does not need patch, but disk does.
+
+GROM_BASE=4
+MODULE="phm3113"
+
+with file(MODULE+"g.bin", 'r+b') as fh:
+    fh.seek(0)
+    fh.write( chr(0xa5))
+    fh.write( chr(0x5a))
+fh.close
+
+with file(MODULE+".dsk", 'r+b') as fh:
+    fh.seek(0x11455)
+    fh.write( chr(GROM_BASE * 4))
+
+    fh.seek(0x11489)
+    fh.write( chr(GROM_BASE * 4))
+
+    fh.seek(0x114b3)
+    fh.write( chr(GROM_BASE * 4))
+
+    fh.seek(0x114c9)
+    fh.write( chr(GROM_BASE * 4))
+
+fh.close

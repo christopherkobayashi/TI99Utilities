@@ -1,0 +1,45 @@
+#! /usr/bin/python2.7
+
+# Plato -- PHM3122
+
+GROM_BASE=2
+EPROM_BASE=1
+MODULE="phm3122"
+
+with file(MODULE+"c.bin", 'r+b') as fh:
+    fh.seek(0xff)
+    fh.write( chr(GROM_BASE * 4))
+fh.close
+
+with file(MODULE+"g.bin", 'r+b') as fh:
+    fh.seek(0)
+    if GROM_BASE == 0:
+      fh.write( chr(0xaa))
+      fh.write( chr(0x01))
+    else:
+      fh.write( chr(0xa5))
+      fh.write( chr(0x5a))
+    fh.seek(3)
+    fh.write( chr(EPROM_BASE) )
+
+    fh.seek(6)
+    fh.write( chr(0x60))
+    fh.write( chr(0x2c))
+
+    fh.seek(0x2c)
+    fh.write( chr(0x00))
+    fh.write( chr(0x00))
+    fh.write( chr(0x60))
+    fh.write( chr(0x13))
+
+    fh.write( chr(5))
+    fh.write( "PLATO")
+
+# Stomp GK-autostart header if present
+    fh.seek(0x1800)
+    i = 16
+    while i != 0:
+      fh.write( chr(0x00))
+      i = i - 1
+
+fh.close

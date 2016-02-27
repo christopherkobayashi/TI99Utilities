@@ -1,0 +1,11 @@
+#! /usr/bin/python2.7
+
+GROM_BASE=2
+MODULE="phm3040"
+
+with file(MODULE+"g.bin", 'r+b') as fh:
+    fh.seek(0)
+    fh.write( chr(0xa5))
+    fh.write( chr(0x5a))
+
+fh.close

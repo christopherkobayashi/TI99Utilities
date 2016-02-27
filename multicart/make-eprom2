@@ -1,0 +1,10 @@
+#! /bin/sh
+
+EPROM=multicart1-eprom.bin
+
+rm -f ${EPROM}
+dd if=/dev/zero of=${EPROM} bs=1k count=512
+dd if=multimenu106C.bin of=${EPROM} seek=0 bs=8k
+dd if=phm3122c.bin of=${EPROM} seek=1 bs=8k
+dd if=phm3189c.bin of=${EPROM} seek=2 bs=8k
+dd if=multimenu106C.bin of=${EPROM} seek=63 bs=8k

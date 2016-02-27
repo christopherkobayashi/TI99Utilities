@@ -1,0 +1,15 @@
+#! /bin/sh
+
+DISK=multicart.dsk
+COUNTER=1
+
+cp template.dsk ${DISK}
+
+for i in `ls phm*g.bin`; do
+	split -b 8192 $i;
+	for j in x??; do mv $j ${COUNTER}${j}
+	  xdm99.py -a ${COUNTER}${j} -n "`echo ${COUNTER}${j} | tr [:lower:] [:upper:]`" ${DISK}
+	done
+	let COUNTER++
+	rm ?x??
+done
