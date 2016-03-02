@@ -44,23 +44,22 @@ def valid_image(track):
   i = 0
   while i < 5:
 	if track[16 + 6 + (i * 334)] != chr(0xfe):
-	  print "FM: not 0xfe", track[16 + 6 + (i * 334)].encode("hex")
 	  break
 	elif track[16 + 30 + (i * 334)] != chr(0xfb):
-	  print "FM: not 0xfb"
 	  break
 	i = i + 1
   if i == 5:
+	print "Verified DSSD"
 	return 1
 
   while i < 5:
 	if track[40 + 13 + (i * 340)] != chr(0xfe):
-	  print "MFM: not 0xfe", track[40 + 13 + (i * 340)].encode("hex")
+	  break
         elif track[40 + 57 + (i * 340)] != chr(0xfb):
-	  print "MFM: not 0xfb"
 	  break
 	i = i + 1
   if i == 5:
+	print "Verified DSDD"
 	return 2
   else:
     	return 0
@@ -111,10 +110,10 @@ def main(argv=None):
 
   if input_size == 260240:
 	print "Source is DSSD (260240)"
-	density = 0
+	density = 1
   elif input_size == 549760:
 	print "Source is DSDD (549760)"
-	density = 1
+	density = 2
   else:
 	print "Source has a bad size:", len(buffer)
 	sys.exit(1)
@@ -136,7 +135,7 @@ def main(argv=None):
 		if side == 1:
 		  track += 40
 		sector = ord(buffer[index+3])
-		if sector > 8 and density != 1:
+		if sector > 8 and density < 2:
 		  print "Error: found sector", sector, "on a DSSD image."
 		  w.close()
 		  sys.exit(3)
@@ -147,8 +146,9 @@ def main(argv=None):
 		  sys.exit(5)
 		index += 1
 	  elif buffer[index] == chr(0xfb) and state == 1:
+		print "track:", track, "side:", side, "sector:", sector
 		state = 0
-		seekto = (sector * 256) + (track * 256 * 9)
+		seekto = (sector * 256) + (track * 256 * (9 * density))
 		w.seek( seekto )
 		for j in range(0, 256):
 		  index += 1
