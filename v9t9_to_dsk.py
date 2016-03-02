@@ -126,7 +126,6 @@ def main(argv=None):
 
 	while index < len(buffer):
 	  if buffer[index] == chr(0xfe):
-		print "found sync at index", hex(index)
 		state = 1
 		track = ord(buffer[index+1])
 		if track > 39:
@@ -148,10 +147,8 @@ def main(argv=None):
 		  sys.exit(5)
 		index += 1
 	  elif buffer[index] == chr(0xfb) and state == 1:
-		print "data mark at index", hex(index)
 		state = 0
 		seekto = (sector * 256) + (track * 256 * 9)
-		print "seeking to offset: ", hex(seekto)
 		w.seek( seekto )
 		for j in range(0, 256):
 		  index += 1
