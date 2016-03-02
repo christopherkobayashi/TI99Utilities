@@ -1,6 +1,6 @@
 #! /usr/bin/python2.7
 
-import os, sys
+import os, sys, getopt
 
 #Name 		Bytes 	Value 	Description
 #DSSD
@@ -40,7 +40,6 @@ import os, sys
 
 #End filler 	~190 	>FF 	Varies with motor speed: (+/- 32 bytes)
 
-
 def valid_image(track):
   i = 0
   while i < 5:
@@ -66,23 +65,43 @@ def valid_image(track):
   else:
     	return 0
 
-buffer = ""
-inputfile = "test-in.dsk"
-outputfile = "test-out.dsk"
+def usage():
+  print "usage: v9t9_to_dsk.py -i <input file> -o <output file>"
+  sys.exit(0)
 
-with open(inputfile, "rb") as f:
+def main(argv=None):
+  buffer = ""
+  inputfile = ""
+  outputfile = ""
+
+  try:
+    opts, args = getopt.getopt(sys.argv[1:], "hi:o:", ["help", "input=", "output="])
+  except getopt.GetoptError as err:
+    usage()
+  for o, a in opts:
+    if o in ("-i", "--input"):
+	inputfile = a
+    if o in ("-o", "--output"):
+	outputfile = a
+    if o in ("-h", "--help"):
+	usage()
+
+  if len(inputfile) == 0 or len(outputfile) == 0:
+    usage()
+
+  with open(inputfile, "rb") as f:
     byte = f.read(1)
     while byte != "":
 	buffer += byte
         byte = f.read(1)
     f.close()
 
-result = valid_image(buffer)
-if result == 0:
-  print "invalid image, bombing out: ", result
-  sys.exit(1)
+  result = valid_image(buffer)
+  if result == 0:
+	print "invalid image, bombing out: ", result
+	sys.exit(1)
 
-input_size = len(buffer)
+  input_size = len(buffer)
 
 # 260240 is DSSD
 # 549760 is DSDD
@@ -90,60 +109,59 @@ input_size = len(buffer)
 # calculated from the embedded data.  We should, however, do some sanity
 # checks regarding file size and highest sector number.
 
-if input_size == 260240:
-  print "Source is DSSD (260240)"
-  density = 0
-elif input_size == 549760:
-  print "Source is DSDD (549760)"
-  density = 1
-else:
-  print "Source has a bad size:", len(buffer)
-  sys.exit(1)
+  if input_size == 260240:
+	print "Source is DSSD (260240)"
+	density = 0
+  elif input_size == 549760:
+	print "Source is DSDD (549760)"
+	density = 1
+  else:
+	print "Source has a bad size:", len(buffer)
+	sys.exit(1)
 
-index = 0
-state = 0
+  index = 0
+  state = 0
 
-with open(outputfile, "wb") as w:
+  with open(outputfile, "wb") as w:
 
-  while index < len(buffer):
-    if buffer[index] == chr(0xfe):
-      print "found sync at index", hex(index)
-      state = 1
-      track = ord(buffer[index+1])
-      if track > 39:
-	print "Error: found track", track, "which is clearly wrong."
-	w.close()
-	sys.exit(4)
-      side = ord(buffer[index+2])
-      if side == 1:
-	track += 40
-      sector = ord(buffer[index+3])
-      if sector > 8 and density != 1:
-	print "Error: found sector", sector, "on a single-density image."
-	w.close()
-	sys.exit(3)
-      length = ord(buffer[index+4])
-      if length != 1:
-	print "Error: sector length is not 1 as expected.  Copy protection?"
-	w.close()
-	sys.exit(5)
-      print "track:", track
-      print "side:", side
-      print "sector:", sector
-      print "length:", length
-      index = index + 1
-    elif buffer[index] == chr(0xfb) and state == 1:
-      print "data mark at index", hex(index)
-      state = 0
-      seekto = (sector * 256) + (track * 256 * 9)
-      print "seeking to offset: ", hex(seekto)
-      w.seek( seekto )
-      for j in range(0, 256):
-	index = index + 1
-	w.write(buffer[index])
-      index = index + 2	# avoid checksum causing problems
-    else:
-      index = index + 1
-	
-w.close()
+	while index < len(buffer):
+	  if buffer[index] == chr(0xfe):
+		print "found sync at index", hex(index)
+		state = 1
+		track = ord(buffer[index+1])
+		if track > 39:
+		  print "Error: found track", track, "which is clearly wrong."
+		  w.close()
+		  sys.exit(4)
+		side = ord(buffer[index+2])
+		if side == 1:
+		  track += 40
+		sector = ord(buffer[index+3])
+		if sector > 8 and density != 1:
+		  print "Error: found sector", sector, "on a DSSD image."
+		  w.close()
+		  sys.exit(3)
+		length = ord(buffer[index+4])
+		if length != 1:
+		  print "Error: sector length is not 1 as expected."
+		  w.close()
+		  sys.exit(5)
+		index += 1
+	  elif buffer[index] == chr(0xfb) and state == 1:
+		print "data mark at index", hex(index)
+		state = 0
+		seekto = (sector * 256) + (track * 256 * 9)
+		print "seeking to offset: ", hex(seekto)
+		w.seek( seekto )
+		for j in range(0, 256):
+		  index += 1
+		  w.write(buffer[index])
+		index += 2	# avoid checksum causing problems
+	  else:
+		index += 1
+  if w:	
+    w.close()
+
+if __name__ == "__main__":
+        sys.exit(main())
 
