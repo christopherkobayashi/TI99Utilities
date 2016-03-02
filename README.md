@@ -9,6 +9,9 @@ hdx.py:		cross-platform HDX server.  Supports both FIAD and TIFILES
 		http://www.ti99-geek.nl/Projects/ti99hdx/ti99hdx_server.html
 		for the Windows-only program that this replaces.
 
+v9t9_to_dsk.py:	cross-platform disk image converter.  Takes a V9T9 image as
+		input and emits a PC99 image as output.
+
 ti_bin_to_wav:	converts TI binary file to WAV file suitable for reading via
 		cassette port.  Output is a 48kHz stereo WAV file constructed
 		from sine waves.
