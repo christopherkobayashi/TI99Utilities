@@ -133,7 +133,7 @@ def main(argv=None):
 		  sys.exit(4)
 		side = ord(buffer[index+2])
 		if side == 1:
-		  track += 40
+		  track = 79 - track
 		sector = ord(buffer[index+3])
 		if sector > 8 and density < 2:
 		  print "Error: found sector", sector, "on a DSSD image."
