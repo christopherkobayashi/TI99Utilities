@@ -1,5 +1,7 @@
 #! /usr/bin/python2.7
 
+import mmap
+
 # Multiplan GROM itself does not need patch, but disk does.
 
 GROM_BASE=4
@@ -11,17 +13,16 @@ with file(MODULE+"g.bin", 'r+b') as fh:
     fh.write( chr(0x5a))
 fh.close
 
-with file(MODULE+".dsk", 'r+b') as fh:
-    fh.seek(0x11455)
-    fh.write( chr(GROM_BASE * 4))
+# handle different versions of the disk
 
-    fh.seek(0x11489)
-    fh.write( chr(GROM_BASE * 4))
-
-    fh.seek(0x114b3)
-    fh.write( chr(GROM_BASE * 4))
-
-    fh.seek(0x114c9)
-    fh.write( chr(GROM_BASE * 4))
-
-fh.close
+with open(MODULE+".dsk", "rb+") as fh:
+    mm = mmap.mmap(fh.fileno(), 0)
+    i = mm.find('\x98\x00')
+    while i > 1:
+	print hex(i)
+	mm.seek(i+1)
+	mm.write(chr(GROM_BASE * 4))
+	mm.flush()
+	i = mm.find('\x98\x00')
+    mm.close()
+fh.close()
