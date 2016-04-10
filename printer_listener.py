@@ -3,9 +3,18 @@
 import datetime
 import time
 from time import sleep
+import signal
 import serial
 import sys
 import os
+
+def control_c(signum, frame):
+    print "control-c hit, closing up shop"
+    if ser:
+      ser.close()
+    if f:
+      f.close()
+    sys.exit(1)
 
 ser = serial.Serial(
     port='/dev/ttyUSB0',
@@ -18,14 +27,18 @@ ser = serial.Serial(
 )
 
 line = ""
+f = ""
+
+signal.signal(signal.SIGINT, control_c)
+
 ser.flush()
 
 while 1:
 
     print "printer listener listening"
     while not line:
-	line = ser.read(10)
 	sleep(5)
+	line = ser.read(1)
 
     print "printer active"
     now = datetime.datetime.now()
