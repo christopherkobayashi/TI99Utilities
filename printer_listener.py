@@ -7,6 +7,7 @@ import signal
 import serial
 import sys
 import os
+import getopt
 
 ser = serial.Serial()
 f = ""
@@ -28,9 +29,10 @@ def main(argv=None):
     speed = 0
     device = ""
     directory = "./"
+    discard_junk = 0
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hd:s:f:n:", ["help", "device=", "speed=", "filter=", "directory="]) 
+        opts, args = getopt.getopt(sys.argv[1:], "hjd:s:f:n:j", ["help", "device=", "speed=", "filter=", "directory=", "discard_junk"]) 
     except getopt.GetoptError as err:
 	usage()
     for o, a in opts:
@@ -42,6 +44,8 @@ def main(argv=None):
 	    filter = a
 	if o in ("-n", "--directory"):
 	    directory = a
+	if o in ("-j", "--discard_junk"):
+	    discard_junk = 1
 
     if speed == 0 or device == "":
 	usage()
@@ -65,6 +69,8 @@ def main(argv=None):
         while not line:
 	    sleep(5)
 	    line = ser.read(1)
+	    if line == chr(0xff) and discard_junk:
+	        line = ""
 
         print "printer active"
         now = datetime.datetime.now()
