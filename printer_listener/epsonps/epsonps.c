@@ -112,14 +112,10 @@ char prolog[] = "epsonps.pro";	/* prolog filename */
 #define INTS_IN_SET	16
 typedef unsigned int char_set[INTS_IN_SET];
 
-#ifdef __TURBOC__
-#define ANSI
-#endif
-
 /* prototypes */
-#ifdef ANSI
 #include <string.h>
 #include <stdlib.h>
+
 int main(int, char*[]);
 void new_page(void);
 void end_page(void);
@@ -145,40 +141,6 @@ void dochar(unsigned char);
 void init_printer(void);
 void set_option(int*, char*);
 void usage(char *);
-#else
-int strlen();		/* from <string.h> */
-int strcmp();		/* from <string.h> */
-char *strcat();		/* from <string.h> */
-char *strcpy();		/* from <string.h> */
-int atoi();		/* from <stdlib.h> */
-int exit();		/* from <stdlib.h> */
-char *malloc();		/* from <stdlib.h> */
-void new_page();
-void end_page();
-void set_font();
-void eject_page();
-void check_page();
-void clear_set();
-int in_set();
-void str_add_set();
-void init_sets();
-int get_pointx();
-int get_pointy();
-void init_tabs();
-void reset_printer();
-void pchar();
-void putline();
-void newline();
-void ignore();
-void invalid();
-void hexout();
-void debug_state();
-void dochar();
-void init_printer();
-void set_option();
-void usage();
-#endif
-
 
 /* Bounding Boxes */
 #define A4_LLX 22
@@ -417,26 +379,21 @@ check_page(void)
 }
 
 void
-clear_set(set)
-char_set set;
+clear_set(char_set set)
 {
 	int i;
 	for (i = 0; i < INTS_IN_SET; i++) set[i] = 0;
 }
 
 int
-in_set(set,c)
-char_set set;
-unsigned char c;
+in_set(char_set set, unsigned char c)
 {
 	c &= 0xff;
 	return ((set[c >> 4] & (1 << (c & 15))) != 0);
 }
 
 void
-str_add_set(set,s)
-char_set set;
-char *s;
+str_add_set(char_set set, char *s)
 {
 	unsigned char c;
 	while (*s) {
@@ -558,8 +515,7 @@ int ptr = 0;
 char outline[LINE_SIZE+5];	/* used in putline() and main() */
 
 void
-pchar(c)
-unsigned char c;
+pchar(unsigned char c)
 {
 	if (eight_bit) {
 		if (eight_bit == 1)
@@ -715,17 +671,14 @@ char hextable[] = {'0','1','2','3','4','5','6','7','8','9',
 		'A','B','C','D','E','F'};
 
 void
-hexout(c)
-unsigned char c;
+hexout(unsigned char c)
 {
 	(void)fputc(hextable[ ((int)c>>4) & 0x0f ],outfile);
 	(void)fputc(hextable[ (int)c & 0x0f ],outfile);
 }
 
 void
-debug_state(str,c)
-char *str;
-unsigned char c;
+debug_state(char *str, unsigned char c)
 {
 	if (debug>=2)
 		fprintf(stderr,"%s: 0x%02x %c\n", str, c,
@@ -754,8 +707,7 @@ typedef enum {S_BASE,S_ESC,S_UNDERLINE,S_SUBSCRIPT,S_DOUBLE,S_NLQMODE,
 states state = S_BASE;
 
 void
-dochar(c)
-unsigned char c;
+dochar(unsigned char c)
 {
 	c &= 0xff;
 	if (ptr >= LINE_SIZE) putline();
@@ -1976,9 +1928,7 @@ char *argv[];
 
 	init_sets();
 	init_printer();
-#ifdef ANSI
 	(void)setvbuf(infile,buffer,_IOFBF,EPSONBUFSIZE);
-#endif
 	while ( (ch=getc(infile)) != EOF)
 		dochar((unsigned char)ch);
 	if (ptr>0)

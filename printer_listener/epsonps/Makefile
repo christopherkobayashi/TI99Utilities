@@ -16,6 +16,9 @@ install: epsonps epsonps.pro epsonps.1
 	install -c -m 755 epsonps     $(BINDIR)/epsonps
 	install -c -m 644 epsonps.pro $(BINDIR)/epsonps.pro
 	install -c -m 644 epsonps.1   $(MANDIR)/epsonps.1
+
+clean:
+	rm -f epsonps
 	
 shar: README epsonps.c epsonps.pro epsonps.1 Makefile
 	shar README epsonps.c > epsonps.sh1
