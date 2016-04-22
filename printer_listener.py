@@ -87,6 +87,14 @@ def main(argv=None):
         f.close()
         line = ""
 
+	# we have a file, now feed it to the filter
+	# my filter is a shell script that contains this:
+	# /path/to/epsonps -o <temp file> ${1} 
+	# gs -q -dBATCH -dNOPAUSE -sDEVICE=ljet3 -sOutputFile=- test.ps | rlpr -Plp -Hprinter
+
+	if filter:
+	    os.system(filter)
+
     ser.close()
 
 if __name__ == "__main__":
