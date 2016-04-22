@@ -1,0 +1,8 @@
+#! /bin/sh
+
+PRINTER="printer"
+EPSONPS="${HOME}/ti/printer_buffer/epsonps"
+
+${EPSONPS} | \
+gs -q -sPAPERSIZE=a4 -dNOPAUSE -dBATCH -sDEVICE=ljet3 -sOutputFile=- - | \
+	rlpr -Plp -H${PRINTER}
