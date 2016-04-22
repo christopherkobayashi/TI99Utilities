@@ -1,0 +1,35 @@
+The program epsonps converts epson printer codes from an input file 
+to PostScript. It is an excellent ASCII listing printer.
+Command line options are provided for auto linefeed, auto carriage return, 
+condensed mode, elite mode, output file name, IBM screen dump mode 
+and paper type selection.
+
+It is written in C and will compile and run on MS-DOS and Unix.  
+A Unix makefile is provided.  
+To compile for MS-DOS see the comments in the Unix makefile.
+
+All Epson LX-800 and Star NL-10 codes are recognised except
+    1: Download characters <ESC> %, <ESC> &
+    2: Alignment <ESC> a
+    3: Proportional printing <ESC> p
+Most Epson LQ-800 printer codes are recognised.
+
+Originally posted as "epson.c" in comp.lang.postscript on 4th March 1988
+by Jon Greenblatt with the following copyright message:
+
+    Copyright (c) 1988, Jonathan Greenblatt,
+        <jonnyg@rover.umd.edu> (128.8.2.73)
+        <jonnyg@umd5.umd.edu> (128.8.10.5)
+        <pcproj@gymble.umd.edu> (128.8.128.16)
+    This program may be redistributed in source form,
+    provided no fee is charged and this copyright notice is preserved.
+
+    Further contributions by:
+       Mark Alexander <uunet!amdahl!drivax!alexande@umd5.UMD.EDU>
+
+
+I have expanded the program and renamed it epsonps.c.
+The copyright message still applies.
+
+Russell Lang <rjl@monu1.cc.monash.edu.au>
+

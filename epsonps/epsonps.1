@@ -1,0 +1,119 @@
+.\" man page for epsonps
+.ds PS P\s-2OST\s+2S\s-2CRIPT\s+2
+.TH EPSONPS 1 "7 May 1991"
+.SH NAME
+epsonps \- convert an Epson printer file to \*(PS
+.SH SYNOPSIS
+.B epsonps
+[
+.B \-L
+]
+[
+.B \-R
+]
+[
+.B \-c
+]
+[
+.B \-d
+]
+[
+.B \-e
+]
+[
+.B \-l
+.I leftmargin
+]
+[
+.B \-o
+.I outfile
+]
+[
+.B \-q
+]
+[
+.B \-t
+.I papertype
+]
+.IR file
+.br
+.SH DESCRIPTION
+The program
+.B epsonps
+converts epson printer codes from an input file 
+.IR file
+to \*(PS on standard output.  
+Unknown, ignored or invalid epson codes are printed on standard error output.
+The program
+.B epsonps
+is an excellent ASCII listing printer.
+The program
+.B epsonps
+can convert Epson LX-800 codes, Epson LQ-800 codes, and IBM text screen dumps.
+.SH OPTIONS
+Boolean flags that are turned on by
+certain letters (such as \-e to select elite pitch) can be turned off
+by following the option immediately with a 0 (as in \-e0).  The
+options that this can be used with are \fBLRcdesq\fP.
+The command line switches are:
+.IP "\fB\-L\fP"
+Auto linefeed.  Add linefeed after carriage return.
+.IP "\fB\-R\fP"
+Auto carriage return.  Add carriage return after linefeed.  
+Useful for printing UNIX files which only have linefeed at end of lines.
+.IP "\fB\-c\fP"
+Condensed mode.  Print characters at 60% of their normal width.
+.IP "\fB\-d\fP"
+Disable debug mode.  By default, unknown, ignored or invalid epson 
+codes are output to stderr.
+.IP "\fB\-e\fP"
+Elite mode.  Print characters at elite pitch (12cpi)
+instead of the default pica pitch (10cpi).
+.IP "\fB\-l\fP\fIleftmargin\fP"
+Set the left margin to \fIleftmargin\fP pica width characters.  
+Default left margin is 0.
+.IP "\fB\-q\fP"
+Epson LQ-800 mode.  Default is Epson LX-800 mode.
+.IP "\fB\-o\fP\fIoutfile\fP"
+Set the output file to \fIoutfile\fP.  Default is stdout.
+.IP "\fB\-s\fP"
+Select screen dump mode.  
+All characters except carriage return and line feed are printable.  
+Default is off.
+.IP "\fB\-t\fP\fIpapertype\fP"
+Set the paper type to \fIpapertype\fP.  
+Valid paper types include:
+.RS
+.nf
+.ta 1.0i
+ a4     297mm by 210mm, 70 lines/page 
+ a4-11  11 by 8.5 inch mapped to a4, 66 lines/page
+ a4-12  12 by 8.5 inch mapped to a4, 72 lines/page
+ a4-15w 11 by 15 inch mapped to a4 rotated, 66 lines/page
+ 11     11 by 8.5 inch, 66 lines/page
+ 11-15w 11 by 15 inch mapped to 11 by 8.5 inch rotated, 66 lines/page
+.fi
+.RE
+Default is \fIa4\fP.
+Other formats can be easily added by modifying the source code.
+.SH FILES
+.RS
+.nf
+.ta 2.5i
+epsonps.pro   The \*(PS prolog.  
+.fi
+.RE
+.PP
+The prolog file \fIepsonps.pro\fP is needed by \fBepsonps\fP.
+An attempt is made to open \fIepsonps.pro\fP in the current directory, 
+and then in the same directory as the epson executable.
+.SH "SEE ALSO"
+lpr(1)
+.SH NOTES
+\*(PS is a registered trademark of Adobe Systems Incorporated.
+.SH AUTHORS
+Jonathan Greenblatt <jonnyg@rover.umd.edu>
+.br
+Mark Alexander <uunet!amdahl!drivax!alexande@umd5.UMD.EDU>
+.br
+Russell Lang <rjl@monu1.cc.monash.edu.au>
