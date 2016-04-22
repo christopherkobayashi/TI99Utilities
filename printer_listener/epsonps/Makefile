@@ -6,7 +6,7 @@
 # for Microsoft C 5.1, use
 #   cl /W3 /DANSI epsonps.c
 #
-MANDIR = /usr/man/man1
+MANDIR = /usr/local/man/man1
 BINDIR = /usr/local/bin
 
 epsonps: epsonps.c
