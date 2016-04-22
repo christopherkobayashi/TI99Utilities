@@ -54,11 +54,11 @@ def main(argv=None):
 
     ser.port=device
     ser.baudrate=speed
-    parity=serial.PARITY_NONE,
-    stopbits=serial.STOPBITS_ONE,
-    bytesize=serial.EIGHTBITS,
-    dsrdtr=True,
-    timeout=15
+    ser.parity=serial.PARITY_NONE
+    ser.stopbits=serial.STOPBITS_ONE
+    ser.bytesize=serial.EIGHTBITS
+    ser.dsrdtr=True
+    ser.timeout=15
 
     ser.open()
     ser.flush()
