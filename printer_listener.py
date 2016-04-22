@@ -93,7 +93,7 @@ def main(argv=None):
 	# gs -q -dBATCH -dNOPAUSE -sDEVICE=ljet3 -sOutputFile=- test.ps | rlpr -Plp -Hprinter
 
 	if filter:
-	    os.system(filter)
+	    os.system("cat "+received_file+" | "+filter)
 
     ser.close()
 
