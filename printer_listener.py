@@ -27,9 +27,10 @@ def main(argv=None):
     line = ""
     speed = 0
     device = ""
+    directory = "./"
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hd:s:f:", ["help", "device=", "speed=", "filter="]) 
+        opts, args = getopt.getopt(sys.argv[1:], "hd:s:f:n:", ["help", "device=", "speed=", "filter=", "directory="]) 
     except getopt.GetoptError as err:
 	usage()
     for o, a in opts:
@@ -37,8 +38,10 @@ def main(argv=None):
 	    device = a
 	if o in ("-s", "--speed"):
 	    speed = a
-	if f in ("-f", "--filter):
+	if o in ("-f", "--filter"):
 	    filter = a
+	if o in ("-n", "--directory"):
+	    directory = a
 
     if speed == 0 or device == "":
 	usage()
@@ -66,7 +69,8 @@ def main(argv=None):
         print "printer active"
         now = datetime.datetime.now()
         nowstring = now.strftime("%Y%m%d%H%M")
-        f = open("printer_buffer-"+nowstring+".txt", "wb")
+	received_file = directory+"printer_buffer-"+nowstring+".txt"
+        f = open(received_file, "wb")
 
         while line:
   	    print line
