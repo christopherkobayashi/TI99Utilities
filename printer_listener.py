@@ -83,3 +83,5 @@ def main(argv=None):
 
     ser.close()
 
+if __name__ == "__main__":
+    sys.exit(main())
