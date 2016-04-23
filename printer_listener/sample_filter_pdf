@@ -7,4 +7,4 @@ PAPER=a4
 
 ${EPSONPS} -t${PAPER} | \
 gs -q -sPAPERSIZE=${PAPER} -dNOPAUSE -dBATCH -sDEVICE=pdfwrite \
-	-sOutputFile=/tmp/ti_output.pdf
+	-sOutputFile=/tmp/ti_output.pdf -
