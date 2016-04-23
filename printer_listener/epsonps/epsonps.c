@@ -426,7 +426,7 @@ init_sets(void)
 }
 
 int
-get_pointx(char_per_inch)
+get_pointx(int char_per_inch)
 {
 	if (lq_mode)
 		return(360/char_per_inch);
@@ -434,7 +434,7 @@ get_pointx(char_per_inch)
 }
 
 int
-get_pointy(char_per_inch)
+get_pointy(int char_per_inch)
 {
 	if (lq_mode)
 		return(360/char_per_inch);
