@@ -5,6 +5,6 @@ EPSONPS="${HOME}/ti/printer_buffer/epsonps"
 PAPER=a4
 #PAPER=letter
 
-${EPSONPS} -t ${PAPER} | \
+${EPSONPS} -t${PAPER} | \
 gs -q -sPAPERSIZE=${PAPER} -dNOPAUSE -dBATCH -sDEVICE=pdfwrite \
 	-sOutputFile=/tmp/ti_output.pdf

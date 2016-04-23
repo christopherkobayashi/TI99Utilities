@@ -2,7 +2,9 @@
 
 PRINTER="printer"
 EPSONPS="${HOME}/ti/printer_buffer/epsonps"
+PAPER=a4
+#PAPER=letter
 
-${EPSONPS} | \
+${EPSONPS} -t${PAPER} | \
 gs -q -sPAPERSIZE=a4 -dNOPAUSE -dBATCH -sDEVICE=ljet3 -sOutputFile=- - | \
 	rlpr -Plp -H${PRINTER}
