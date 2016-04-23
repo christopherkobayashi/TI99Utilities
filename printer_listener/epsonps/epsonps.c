@@ -167,8 +167,8 @@ struct page_format page_formats[] = {
   {"a4-15w",A4_LLX,A4_LLY,A4_URX,A4_URY,66,132,1},  /* 11"*15" -> a4 rotated */
   {"a4-12", A4_LLX,A4_LLY,A4_URX,A4_URY,72,80,0},   /* 12"*8.5" -> a4 */
   {"a4-11", A4_LLX,A4_LLY,A4_URX,A4_URY,66,80,0},   /* 11"*8.5" -> a4 */
-  {"11", LTR_LLX,LTR_LLY,LTR_URX,LTR_URY,66,80,0},    /* 11"*8.5" */
-  {"11-15w",LTR_LLX,LTR_LLY,LTR_URX,LTR_URY,66,80,1}, /* 11"*15" -> 8.5"*11" */
+  {"letter", LTR_LLX,LTR_LLY,LTR_URX,LTR_URY,66,80,0}, /* 11"*8.5" */
+  {"letter-15w",LTR_LLX,LTR_LLY,LTR_URX,LTR_URY,66,80,1}, /* 11"*15" -> 8.5"*11" */
   {(char *)NULL,0,0,0,0,0,0,0}
 };
 
