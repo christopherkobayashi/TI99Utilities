@@ -1,0 +1,120 @@
+.\" SCCS "@(#)rlprm.1	1.3	01/01/02 meem"
+.TH rlprm 1 "1999/10/28" "rlpr 2.04" "UNIX Reference Manual"
+.SH NAME
+rlprm \- remove jobs from a remote line printer spooling queue
+.SH SYNOPSIS
+\fBrlprm\fP [-qNV] [\fB-H\fPprinthost] [\fB-P\fPprinter] [\fB-X\fPproxyhost]
+[\fB--debug\fP] [\fB--timeout=\fPseconds] [\fB--port=\fPport] [-] [ \fBjob # ... \fP] [ \fBusername ... \fP]
+.SH DESCRIPTION
+.PP
+\fBrlprm\fP uses TCP/IP to remove jobs you own from printers anywhere
+on a network.  Unlike lprm, it does not require that the remote
+printers be explicitly known to the local system (traditionally
+through \fI/etc/printcap\fR), and thus is considerably more flexible
+and requires less administration.
+.PP
+\fBrlprm\fP can be used anywhere a traditional \fBlprm\fP might be used,
+and is backwards compatible with traditional BSD \fBlprm\fP.  If
+\fBrlprm\fP is invoked as \fBlprm\fP, it preserves all known lprm
+semantics, with the exceptions of those semantics mentioned in
+\fBBUGS / LIMITATIONS\fP below.
+.PP
+\fBrlprm\fP can be set up, installed, and used in the same two ways
+as \fBrlpr\fP(1) (that is, either with or without the \fBrlprd\fP(8)
+proxy daemon).  Please see \fBrlpr\fP(1) for details, and to
+see whether you will need to use the \fBrlprd\fP(8) proxy daemon or
+not.
+.PP
+.SH OPTIONS
+.PP
+.SS Environment/Setup
+.TP
+.I \-\-debug
+Print gobs of debugging information.
+.TP
+.I \-N, \-\-no-bind
+Don't try to bind to privileged port before connecting to lpd.  Please
+see the \fBCONFIGURING A PROXY\fP section in \fBrlpr\fP(1) for
+information on use of this option.
+.TP
+.I \-\-port=number
+Select an alternate port (instead of 7290) to connect to, if using
+rlprd.  Usually not needed.
+.TP
+.I \-H, \-\-printhost=host
+Select the host to print to (used with \fI-P\fR).
+
+Instead of using \fI-H\fR, one can specify the hostname directly
+including it with the printer name with the \fIprinter@hostname\fR
+syntax.
+.TP
+.I \-P, \-\-printer=printername, \-\-queue=printername
+Select the printer to print to (used with \fI-H\fR).
+.TP
+.I \-X, \-\-proxy=proxyhost, \-\-proxyhost=proxyhost
+Select the proxy host to use, if necessary.
+.TP
+.I \-\-timeout=seconds
+Set the inactivity timer.  If the connection hangs for more than
+\fBseconds\fP seconds, then \fBrlprm\fP will give up.  Use the special
+value `-1' to wait forever.  Default timeout is 3 seconds.
+.TP
+.I \-V, \-\-version
+Print version and exit.
+.SS Behavior
+.TP
+.I \-
+Remove all of your jobs.  Note that this option must be specified
+immediately following the end of all other options.  This option is a
+mutant supported only for compatibility.  Instead of using this,
+include your username as the first argument to \fBrlprm\fP.
+.TP
+.I \-q, \-\-quiet, \-\-silent
+Quiet mode \- stay quiet (except for fatal errors).  See
+\fBBUGS / LIMITATIONS\fP for problems using \fBrlprm\fP in silent-mode
+operation.
+.PP
+.SH "ENVIRONMENT VARIABLES"
+The following environment variables are used by \fBrlprm\fP:
+.TP
+.B RLPR_PRINTHOST
+Specifies the default host's queue to remove jobs from.
+.TP
+\fBPRINTER\fP or \fBLPDEST\fP
+Specifies the default printer to remove jobs from on the host.
+.br
+First \fBPRINTER\fP is consulted, then \fBLPDEST\fP.
+
+Note that one can also specify the host to examine by setting
+printer to be \fIprinter@hostname\fR.  This may be more convenient
+than setting \fBRLPR_PRINTHOST\fP, but will confuse the traditional
+BSD print commands.
+.TP
+\fBRLPR_PROXYHOST\fP
+Specifies a proxy host to use, if necessary.
+.SH FILES
+.nf
+.ta \w'123456789012345678'u
+~/.rlprrc	Personal printer/host database
+/etc/hosts.lpd	Host-based security on printhost
+/etc/hosts.equiv	Host-based security on printhost
+/etc/passwd	Personal identification
+/etc/rlprrc	System-wide printer/host database
+.SH "SEE ALSO"
+\fBrlpr\fP(1), \fBrlpq\fP(1), \fBrlprd\fP(8), \fBrlprrc\fP(5)
+.SH AUTHOR
+meem <meem@gnu.org>
+.SH "BUGS / LIMITATIONS"
+Due to limitations in the current lpd protocol, it is not currently
+possible to tell whether or not the job removal succeeded when
+operating in silent mode.
+.PP
+Due to limitations in the current lpd protocol, it is not currently
+possible to emulate the superuser semantics for the `-' option.
+Instead, only root's jobs are removed.
+.PP
+Due to general niavete in the lpd protocol, \fBrlprm\fP(1) provides a 
+lot of room for misbehavior; it is trivial to imagine how it can be
+used to remove jobs that do not belong to you.  Unfortunately, any
+security added at this point is just sugar-coating -- the underlying
+protocol is flawed.

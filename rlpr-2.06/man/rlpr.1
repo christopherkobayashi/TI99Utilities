@@ -1,0 +1,343 @@
+.\" SCCS "@(#)rlpr.1	1.3	01/01/02 meem"
+.TH rlpr 1 "2000/12/30" "rlpr 2.04" "UNIX Reference Manual"
+.SH NAME
+rlpr \- remote off-line print
+.SH SYNOPSIS
+\fBrlpr\fP [\fB-H\fPprinthost] [\fB-P\fPprinter] [\fB-X\fPproxyhost]
+[\fB-#\fPcopies] [\fB-C\fPclass] [\fB-J\fPjob] [\fB-T\fPtitle] [\fB-U\fPuser]
+[\fB-i\fP[indent]] [\fB-w\fPwidth] [\fB-1234cdfghlmnopqrstvNV\fP]
+[\fB--debug\fP]
+[\fB--port\fP=port]
+[\fB--hostname\fP=hostname]
+[\fB--send-data-first\fP]
+[\fB--timeout\fP=seconds]
+[\fB--tmpdir\fP=dir]
+[\fB--verbose\fP]
+[\fB--windows\fP]
+[file ...]
+.SH DESCRIPTION
+\fBrlpr\fP uses TCP/IP to send print jobs to lpd servers anywhere on
+a network.  Unlike \fBlpr\fP, it does not require that the remote printers
+be explicitly known to the local system (traditionally through
+\fI/etc/printcap\fR), and thus is considerably more flexible and
+requires less administration.
+.PP
+\fBrlpr\fP can be used anywhere a traditional \fBlpr\fP might be used,
+and is backwards compatible with traditional BSD \fBlpr\fP.  If
+\fBrlpr\fP is invoked as \fBlpr\fP, it preserves all known lpr
+semantics.
+.PP
+\fBrlpr\fP can be installed and used in two different ways:  (the
+same guidelines apply for \fBrlpq\fP(1) and \fBrlprm\fP(1))
+.PP
+1. Ideally, if the \fBrlpr\fP client can be installed setuid root,
+then \fBrlpr\fP can interact directly with other \fBlpd\fP's on the
+network.  See \fBEXAMPLES\fP below.
+.PP
+2. If \fBrlpr\fP cannot be installed setuid root (in cases where one
+is not the administrator on the machine one needs to print from) then
+\fBrlpr\fP can be used in conjunction with an \fBrlprd\fP proxy
+agent. See  \fPCONFIGURING A PROXY\fP and \fB EXAMPLES\fP below
+for details.
+.SH MOTIVATION
+Traditional Berkeley \fBlpr\fP has one major drawback: the mortal user
+cannot \fBlpr\fP to a printer which is not listed explicitly in the
+\fI/etc/printcap\fR file.
+.PP		
+This is especially annoying in scenarios where there is a central UNIX
+server which many users (using their own desktop computers) connect to
+in order to do their daily work; If those users wish to print files
+from the central server to their personal machines (assuming they had
+a local \fBlpd\fP), they \fIcannot do this\fR without the central
+server's \fI/etc/printcap\fR being edited to contain the host and
+printer of each user on the network \- this scales horribly.
+.SH OPTIONS
+.PP
+.SS Environment/Setup
+.TP
+.I      \-\-debug
+Print gobs of debugging information.
+.TP
+.I \-N, \-\-no-bind
+Don't try to bind to privileged port before connecting to lpd.  Please 
+see \fBCONFIGURING A PROXY\fP below for information on use 
+of this option.
+.TP
+.I      \-\-port=number
+Select an alternate port (instead of 7290) to connect to, if using
+rlprd.  Usually not needed.
+.TP
+.I \-H, \-\-printhost=host
+Select the host to print to (used with \fI-P\fR).
+
+Instead of using \fI-H\fR, one can specify the hostname directly
+including it with the printer name with the \fIprinter@hostname\fR
+syntax.
+.TP
+.I \-P, \-\-printer=printername, \-\-queue=printername
+Select the printer to print to (used with \fI-H\fR).
+.TP
+.I \-X, \-\-proxyhost=proxyhost
+Select the proxy host to use, if necessary.
+.TP
+.I \-\-timeout=seconds
+Set the inactivity timer.  If the connection hangs for more than
+\fBseconds\fP seconds, then \fBrlpr\fP will give up.  Use the special
+value `-1' to wait forever.  Default timeout is 3 seconds.
+.TP
+.I \-\-tmpdir=tmpdir
+Use tmpdir for temporary files (by default, \fB/tmp\fP is used)
+.TP
+.I \-V, \-\-version
+Print version and exit.
+.PP
+.fi
+\fBNOTE:\fP instead of specifying the printer, printhost, or proxy
+variables on the commandline, one can set up defaults through either
+environment variables or \fBrlprrc\fP configuration files.  For
+information on personal or system-wide \fBrlprrc\fP files, see
+\fBrlprrc\fP(5).
+.SS Behavior
+.TP
+.I \-#, \-\-copies=copies
+Print \fIcopies\fR copies of each document \- use sparingly,
+\fBprinters aren't copiers\fP.
+.TP
+.I \-m, \-\-mail
+Send mail upon completion.
+.TP
+.I \-q, \-\-quiet, \-\-silent
+Quiet mode \-\ stay quiet (except for fatal errors).
+.TP
+.I \-r, \-\-remove
+Remove file after printing.
+.TP
+.I \-s
+.br
+Ignored (provided for compatibility).
+.TP
+.I \-\-send\-data\-first
+Send the "data" transaction before the "control" transaction.  Should
+never be required when \fBrlpr\fP is used in conjunction with a RFC
+1179 conformant \fBlpd\fP.  However, buggy implementations exist which 
+require these semantics.  Use only when necessary.
+.TP
+.I \-\-verbose
+Verbose mode \- on by default unless \fBrlpr\fP is invoked as \fBlpr\fP.
+.TP
+.I \-\-windows
+"Windows" mode \- for printing multiple files to a
+windows-based \fBlpd\fP.
+.fi
+.SS Document Content
+.ta \w'1234'u
+.nf
+\fI\-1\fR	 Print data using \fBtroff\fP(1) R (times roman) font.
+\fI\-2\fR	 Print data using \fBtroff\fP(1) I (times italic) font.
+\fI\-3\fR	 Print data using \fBtroff\fP(1) B (times bold) font.
+\fI\-4\fR	 Print data using \fBtroff\fP(1) S (special) font.
+\fI\-c\fR	 Assume data has been produced by \fBcifplot\fP(1).
+\fI\-d\fR	 Assume data has been produced by \fBtex\fP(1).
+\fI\-f\fR	 Filter data assuming the start of each line has
+	a \fIfortran\fR carriage control character.
+\fI\-g\fR	 Assume data has been produced by the BSD plot library.
+\fI\-l\fR	 Treat control characters as regular characters.
+\fI\-n\fR	 Assume data has been produced by \fBditroff\fP.
+\fI\-o\fR	 Assume data is \fIpostscript\fR.
+\fI\-p\fR	 Print data using \fBpr\fP(1).
+\fI\-t\fR	 Assume data has been produced by \fBtroff\fP(1).
+\fI\-v\fR	 Assume the data contains a raster image.
+.fi
+.SS Document Format
+.TP
+.I \-i, \-\-indent=[cols]
+Indent output by \fIcols\fR columns (8 by default).
+.TP
+.I \-h, \-\-no-burst
+Do not print burst (banner) page.
+.TP
+.I \-w, \-\-width=width
+Use \fIwidth\fR for page width when using \fBpr\fP(1).
+.TP
+.I \-C, \-\-class=class
+Use \fIclass\fR for the class name on burst page instead of
+the local system name.
+.TP
+.I \-J,  \-\-job=jobname
+Use \fIjobname\fR for the job name on burst page instead of
+the first filename in the job.
+.TP
+.I \-T, \-\-title=title
+Use \fItitle\fR for the title when using \fBpr\fP(1)
+instead of the current filename.
+.TP
+.I \-U, \-\-user=username
+Use \fIusername\fR for the user name on burst page instead
+of the actual username.
+.TP
+.I \-\-hostname=hostname
+Use \fIhostname\fR for the hostname on the burst page instead of
+the local system name.
+.fi
+.SS OS-Specific Extensions
+See \fBOS-SPECIFIC EXTENSIONS\fR below for details on these
+options.
+.TP
+.I \-\-ext=os \-\-extension=os
+Interpret the arguments passed to \fI\-\-extargs\fR as if on operating 
+system \fIos\fR.  Currently, \fIos\fR must be either \fIhpux\fR or
+\fInone\fR.
+.TP
+.I \-\-extargs="args"
+Change behavior according to OS-specific arguments listed in
+\fIargs\fR.
+.br
+.SH "CONFIGURING A PROXY"
+In situations where the \fBrlpr\fP client cannot be installed setuid
+root, \fBrlpr\fP often cannot directly talk to an \fBlpd\fP because
+most \fBlpd\fP's require that requests come from privileged
+ports. Unfortunately, \fBrlpr\fP cannot "come from a privileged port"
+without having superuser status.
+.br
+\fBThe privileged port requirement is part of RFC 1179.\fP
+
+That said, some \fBlpd\fP's, most notably some of the ones which have
+shipped with \fBWindows NT\fP, \fBSolaris\fP, and \fBNCRunix\fP, do
+not require requests to come from a privileged port.  Before going
+through the work of configuring a proxy, you should make sure one is
+required for your situation.  You can check by trying to run
+\fBrlpr\fP: if it is successful in spooling the job, you do not need
+to install \fBrlpr\fP setuid root.  You should then pass the \fI\-N\fR
+(or the more verbose \fI\-\-no-bind\fR) to \fBrlpr\fP in the future to
+suppress \fBrlpr\fP's warning messages.
+
+\fBIf your situation does not require a privileged port, do not use
+one.\fP You can explicitly request a regular port, even when
+\fBrlpr\fP has been installed setuid root, by using the
+\fI\-\-no-bind\fR option.  This is a good idea because there are only
+11 privileged ports that the RFC allows.  This ends up having the
+practical implication of limiting your print requests to about 11 per
+every 3 minutes, which is often unacceptable.
+
+The rest of this section assumes that \fBrlpr\fP cannot be installed
+setuid root in your situation, and that a remote \fBlpd\fP requires
+\fBrlpr\fP connect to it from a privileged port.  It requires that you
+or someone you know has root access to another machine the network, so
+that you can use a \fBproxy\fP, known as \fBrlprd\fP, to get around
+the problem.
+.PP
+\fBrlprd\fP works by taking \fBlpd\fP requests on a non-privileged port,
+mapping them to a privileged port, and sending them out to the real
+\fBlpd\fP. The proxy and the lpd \fBneed not be on the same
+machine\fP. 
+.PP
+In the scenario provided in the motivation, if each user had root
+access on his own machine, it would be optimal for the user to start
+\fBrlprd\fP up on his own machine, in which case the proxy and the
+printhost are the same machine.  The user would additionally have to
+make sure his own machine was listed in his local
+\fI/etc/hosts.lpd\fR so that his \fBlpd\fP would accept connections
+from his \fBrlprd\fP.
+.PP
+However, if the machine the user wants to print to is not running
+unix (but is running an \fBlpd\fP) (i.e. Windows, WinNT, etc) -- Then
+that user can configure his \fBlpd\fP to accept connections from
+an \fBrlprd\fP running somewhere on the network, and use that
+\fBrlprd\fP as a proxy for \fBrlpr\fP.
+.PP
+For more on this mess, see \fBrlprd\fP(8).
+.SH EXAMPLES
+.TP
+WITHOUT A PROXY  (rlpr is setuid root)
+.PP
+sun% \fBrlpr --printer=hp4l@foo.bar.org foo.c\fP
+.PP
+prints \fBfoo.c\fP to the printer \fBhp4l\fP on the host
+\fBfoo.bar.org\fP (assuming foo.bar.org has been
+configured to accept print requests from host \fBsun\fP in its
+\fI/etc/hosts.lpd\fR).
+.PP
+sun% \fBwho | rlpr --printer=hp4l@foo.bar.org\fP
+.PP
+prints the output of \fBwho\fP(1) to the printer \fBhp4l\fP on the
+host \fBfoo.bar.org\fP.
+.TP
+WITH A PROXY  (rlpr is a normal program)
+.PP
+sun% \fBrlpr -Xfoo.bar.org --printer=hp4l@foo.bar.org foo.c\fP
+.PP
+prints \fBfoo.c\fP to the printer \fBhp4l\fP on the host
+\fBfoo.bar.org\fP using \fBfoo.bar.org\fP as a proxyhost. Under this
+configuration, foo.bar.org needs to be configured to accept print
+requests from the proxy (itself) and \fBnot from sun\fP. In situations
+where the proxy and the printhost are not the same machine, this can
+lead to some security holes due to the original lameness of berkeley
+\fBlpd\fP's host-based security.
+.PP
+\fBNOTE:\fP if a proxyhost isn't specified anywhere, \fBrlpr\fP
+assumes one isn't necessary.
+.SH "OS-SPECIFIC EXTENSIONS"
+Some vendors have added features to their BSD-based \fBlpr\fP
+products, which are upwardly compatible with \fBlpr\fP but
+incompatible with one another.  To support these extensions,
+\fBrlpr\fP allows the user to indicate what operating system to
+emulate and provide a string of OS-specific options, either through 
+commandline arguments or environment variables.
+.PP
+Note that for correct operation, these extensions should be only used
+when interoperating with an \fBlpd\fP provided by the vendor for the
+indicated operating system.
+.SH "ENVIRONMENT VARIABLES"
+The following environment variables are used by \fBrlpr\fP:
+.TP
+.B RLPR_EXTENSION
+Specifies the operating system to interpret OS-specific arguments
+relative to.
+.TP
+.B RLPR_EXTARGS
+Specifies the OS-specific arguments.
+.TP
+.B RLPR_PRINTHOST
+Specifies the default host to print to.
+.TP
+\fBPRINTER\fP or \fBLPDEST\fP
+Specifies a default printer (printqueue) to use.
+.br
+First \fBPRINTER\fP is consulted, then \fBLPDEST\fP.
+
+Note that one can also specify the host to print to by setting
+printer to be \fIprinter@hostname\fR.  This may be more convenient
+than setting \fBRLPR_PRINTHOST\fP, but will confuse the traditional
+BSD print commands.
+.TP
+\fBRLPR_PROXYHOST\fP
+Specifies a proxy host to use, if necessary.
+.TP
+.B RLPR_CONFDIR
+.br
+If \fBRLPR_CONFDIR\fP is set, it is the directory containing the
+system-wide \fBrlprrc\fP file.  By default, \fB/etc\fP is used.
+.TP
+.B TMPDIR
+.br
+If \fBTMPDIR\fP is set, it is used for temporary files.  By default, 
+\fB/tmp\fP is used.
+.PP
+.SH FILES
+.nf
+.ta \w'123456789012345678'u
+~/.rlprrc	Personal printer/host database
+$TMPDIR/cf*	Temporary control files on local machine
+$TMPDIR/df*	Temporary data file for jobs from stdin
+/var/spool/*/cf*	Temporary control files on printhost
+/var/spool/*/df*	Temporary data files on printhost
+/etc/hosts.lpd	Host-based security on printhost
+/etc/passwd	Personal identification
+/etc/rlprrc	System-wide printer/host database (by default)
+.fi
+.SH "SEE ALSO"
+\fBrlpq\fP(1), \fBrlprm\fP(1), \fBrlprd\fP(8), \fBrlprrc\fP(5), \fBlpr\fP(1)
+.SH AUTHOR
+meem <meem@gnu.org>
+.SH "BUGS / LIMITATIONS"
+Some evil applications have \fBlpr\fP hardcoded into them.
