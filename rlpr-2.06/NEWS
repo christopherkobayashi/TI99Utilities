@@ -1,0 +1,73 @@
+Changes in release 2.06:
+
+* fixed several autoconf-related problems introduced in 2.05.
+* support fallback to syslog() when vsyslog() is not available.
+
+Changes in release 2.05:
+
+* fixed security flaw detailed at: http://www.osvdb.org/7194
+
+Changes in release 2.04:
+
+* removed -W flag so that it does not conflict with POSIX.2 systems.
+* fixed rlpr to not expect an argument with --windows (nee -W) option.
+* fixed `bsdlinks' target to not accidentally remove lprm.
+* stubbed out i18n/l10n functions to make ./configure --disable-nls work.
+* enhanced rlpr to print a warning if the user attempts to print an
+  empty file.
+  
+Changes in release 2.03:
+
+* added support for printer alternation in check-server.sh.
+* fixed message displayed when incorrect non-long style options are
+  passed to rlpr, rlpq, rlprd, or rlprm.
+* added configurable configuration directory (RLPR_CONFDIR) support.
+* added support for running `configure' out of other than `top_srcdir'
+* fixed build problem that caused libnsl and libsocket (when required)
+  not to appear on link line.
+* new autoconf macros for EXIT_FAILURE/EXIT_SUCCESS.
+* fixed two bugs in rlprrc lookups of hosts for a printer.
+* fixed bug which prevented rlprrc lookups for a printer for a host
+  (now, default to `lp' is only done when the rlprrc lookup fails).
+
+Changes in release 2.02:
+
+* fixed connect() to report the correct error message upon failure.
+* changed Makefiles to never use += operator (for portability).
+* revised code to compile correctly on newer releases of GNU libc.
+* updated pointers to packages in README.
+* fixed --no-bind to work when running as root.
+* fixed Makefiles so error.o is now only put in librlpr once.
+* fixed broken configure.in custom checks for MAXHOSTNAMELEN and off_t.
+* added custom check for h_errno definition in <netdb.h>.
+* fixed test(1) brokenness in check-server.sh.
+
+Changes in release 2.01:
+
+* fixed bug that would cause rlpr to send from unprivileged ports
+* fixed some longstanding argument parsing problems
+* added `--hostname' option
+* fixed bug that caused rlpr to be interrupted with SIGPOLL
+* added generic support for vendor extensions to lpr
+* added support for some hp/ux lpr extensions
+* changed the default timeout to be more reasonable
+* small fixes to make the code compile properly on aix 4.1.x
+* small fixes to make the code compile properly on freebsd
+* made ~/.rlprrc truly optional
+
+Changes in release 2.00:
+
+* complete rewrite of rlpr, rlpq, and rlprd - much more modular
+* addition of new rlprm command
+* complete re-architecture of build environment (deep directories now)
+* new hooks for internationalization support
+* build procedure now uses automake in addition to autoconf
+* remote printing commands now support a --timeout option in case
+  remote end dies
+* new --send-data-first option to rlpr to work with buggy lpd's
+* rlpr now works with hp jetdirect printers
+* rlpr now includes a shiny-new progress meter, useful when printing
+  files over slow links
+* all printing commands default to `lp' printer now, like bsd
+* RLPR_PROXY has been removed; use RLPR_PROXYHOST instead
+* uses automake, autoconf, etc..

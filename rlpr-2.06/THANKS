@@ -1,0 +1,11 @@
+Several people were particularly helpful in getting rlpr out the door;
+in particular, thanks to Diane Davidowicz for motivating me to
+actually finish it and for testing it on several operating systems.
+Also, thanks to Dan Stromberg and Jose Santiago for testing out
+earlier non-public betas and sending back detailed snoop traces, and
+Alain Nissen for tracking down down a number of pernicious bugs.
+Thomas Sefzick also helped get me get rlpr working under Digital Unix
+and found an number of portability bugs.  Thanks also go out to the
+myriad nameless who have sent in patches and suggestions over the
+years: rlpr has met my personal needs for years; at this point, its
+future direction is driven by its users.

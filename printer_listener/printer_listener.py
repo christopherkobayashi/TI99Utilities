@@ -30,6 +30,7 @@ def main(argv=None):
     device = ""
     directory = "./"
     discard_junk = 0
+    filter = ""
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], "hjd:s:f:n:j", ["help", "device=", "speed=", "filter=", "directory=", "discard_junk"]) 

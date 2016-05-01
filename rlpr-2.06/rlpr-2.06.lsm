@@ -1,0 +1,22 @@
+Begin3
+Title:          rlpr
+Version:        2.06
+Entered-date:	07SEP04
+Description:    Makes it possible (or at the very least, easier), to print
+		files on remote sites to your local printer.  The rlpr package
+		includes BSD-compatible replacements for `lpr', `lpq', and
+		`lprm', whose functionality is a superset of their BSD
+		counterparts.  The rlpr package is extremely portable and works
+		on a wide variety of POSIX-based systems.
+Appindex:	912281992
+Keywords:       rlpr, printing, remote printing, printing tools, lpr, spooling
+Author:         meem@gnu.org (meem)
+Maintained-by:  meem@gnu.org (meem)
+Primary-site:   ftp://truffula.com/pub/
+		158K rlpr-2.06.tar.gz
+Alternate-site:
+Original-site:  
+Platforms:      Linux, Solaris, Irix, HP/UX, FreeBSD, NetBSD, OpenBSD, AIX
+	        AIX, Tru64 (Digital UNIX), HURD
+Copying-policy: GPL 
+End

@@ -1,0 +1,20 @@
+These files were taken verbatim from the GNU C Library.
+
+This directory contains source for functions which are occasionally
+missing from popular Unix variants.  These functions will *not* be
+used if your system includes support for them already, with the
+following exceptions:
+
+	* xmalloc(), xstrdup(), xstrtol() and xstrtoul(), since these
+          are not standard functions.
+
+        * Any functions you explicitly request to be used.  This is
+          useful when a function on your system is known to be buggy -
+          for instance, old releases of Solaris are known to have a
+          buggy alloca().  In general, you can count on autoconf to
+	  do a good job figuring out whether you need these routines.
+	  However, if you want to outsmart autoconf, merely edit the
+	  `config.h' in the main distribution directory.
+
+In general, you shouldn't have to worry about these details -- just
+let autoconf take care of everything.
