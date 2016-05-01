@@ -1,0 +1,31 @@
+#! /usr/bin/python2.7
+
+ROM0_BASE=1
+ROM1_BASE=ROM0_BASE+1
+MODULE="turboforth"
+
+with file(MODULE+"C.bin", 'r+b') as fh:
+    fh.seek(0x0069)
+    fh.write( chr(ROM1_BASE * 2))
+    fh.seek(0x006b)
+    fh.write( chr(ROM0_BASE * 2))
+    fh.seek(0x0073)
+    fh.write( chr(ROM0_BASE * 2))
+    fh.seek(0x1d7f)
+    fh.write( chr(ROM1_BASE * 2))
+    fh.seek(0x1f87)
+    fh.write( chr(ROM0_BASE * 2))
+    fh.seek(0x1f8d)
+    fh.write( chr(ROM1_BASE * 2))
+    fh.seek(0x1f9f)
+    fh.write( chr(ROM0_BASE * 2))
+fh.close
+
+with file(MODULE+"D.bin", 'r+b') as fh:
+    fh.seek(0x0069)
+    fh.write( chr(ROM1_BASE * 2))
+    fh.seek(0x006b)
+    fh.write( chr(ROM0_BASE * 2))
+    fh.seek(0x0073)
+    fh.write( chr(ROM0_BASE * 2))
+fh.close
