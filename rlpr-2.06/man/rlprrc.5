@@ -1,0 +1,55 @@
+.\" SCCS "@(#)rlprrc.5	1.3	01/01/02 meem"
+.TH rlprrc 5 "1999/10/28" "rlpr 2.04" "UNIX Reference Manual"
+.SH NAME
+rlprrc \- remote printing resource file
+.SH DESCRIPTION
+The \fBrlprrc\fP configuration file is consulted by the remote
+printing commands (\fBrlpr\fP(1), \fBrlpq\fP(1), and \fBrlprm\fP(1))
+to resolve a printqueue or a hostname. It can be used to either lookup
+a printqueue (printer) for a given host, or a host for a given
+printqueue.  If both the printer and the printhost are known, this
+file is never consulted.
+.PP
+Initially, the remote printing commands look for the file \fI.rlprrc\fR
+in the user's home directory.  If that file cannot be found or does
+not provide the information necessary to resolve the query, then
+the system-wide \fI/etc/rlprrc\fR is consulted (if present).
+If resolution is still unsuccessful, the command fails.
+.PP
+There is one entry per line \- each line has the format:
+.PP
+\fBhostname: printer1 printer2 ... printerN\fP
+.PP
+Which indicates that host \fBhostname\fP has printers \fBprinter1
+printer2 ... printerN\fP available.  In the case where the remote
+printing command knows the host to print to but does not know which
+printer to use on that host, the first one (\fBprinter1\fP here) will
+be used.
+.PP
+In the case where the remote printing command knows the printqueue
+(printer) to print to but does not know what host has that queue, the
+last host which has the specified printqueue is used.  If this
+behavior is not acceptable, you can force a certain host to always be
+used for a certain printqueue by putting a \fB!\fP after the
+printqueue name.
+.PP
+For example, an \fB.rlprrc\fP file containing:
+.ta \w'1234567'u
+.nf
+
+	foo.baz.org: litho laserjet4! 
+	foo.bar.org: laserjet4 lineprinter
+
+.fi
+.PP
+will always resolve the printqueue \fBlaserjet4\fP to
+\fBfoo.baz.org\fP no matter what other hosts have a printqueue named
+\fBlaserjet4\fP.
+.PP
+The \fBrlprrc\fP file is only consulted in situations where a
+printqueue or hostname needs to be resolved.  \fBIt is provided only for
+convenience and is not required.\fP
+.SH SEE ALSO
+\fBrlpr\fP(1), \fBrlpq\fP(1), \fBrlprm\fP(1), \fBrlprd\fP(8)
+.SH AUTHOR
+meem <meem@gnu.org>

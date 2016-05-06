@@ -1,0 +1,62 @@
+.\" SCCS "@(#)rlprd.8	1.3	01/01/02 meem"
+.TH rlprd 8 "1999/10/28" "rlpr 2.04" "UNIX Reference Manual"
+.SH NAME
+rlprd \- remote printing proxy daemon
+.SH SYNOPSIS
+\fBrlprd\fP  [\fB-nqV\fP] [\fB-p\fPport] [\fB-t\fPtimeout] [\fB--debug\fP]
+.SH DESCRIPTION
+\fBrlprd\fP is a proxy which runs between the remote printing commands
+(\fBrlpr\fP(1), \fBrlpq\fP(1), and \fBrlprm\fP(1)) and standard
+\fBlpd\fP print servers in situations where the remote printing
+commands cannot be installed setuid root.  For a discussion on how to
+configure the remote printing commands, please see \fBrlpr\fP(1).
+.PP
+\fBrlprd\fP needs to be installed setuid root \- if it cannot be run this
+way, it is \fBuseless\fP.
+.PP
+\fBrlprd\fP works by mapping non-privileged port requests from
+\fBrlpr\fP(1) clients to privileged ports so that \fBlpd\fP's will
+listen to them.  Eliminating the "security" gained by having
+privileged ports is a non-issue, since the Internet is no longer just
+Unix, and Unix is the only OS that has the privileged port concept.
+.PP
+\fBrlprd\fP is \fBnot\fP a replacement for \fBlpd\fP(8).  It merely
+passes data to a \fBlpd\fP(8) on a target machine (which is specified
+by an invocation of a remote printing command).  However, when
+a client is using the \fBrlpr\fP suite of tools to do remote printing,
+the client does not need to run an \fBlpd\fP(8) locally.
+.PP
+Note that once an \fBrlprd\fP is set up on a network (including the
+Internet), any host may connect to it and use its proxy services if it 
+knows the name of the machine running it.
+.SH OPTIONS
+.PP
+.TP
+.I \-\-debug
+Print gobs of debugging information.
+.TP
+.I \-n, \-\-no-daemon
+Don't run rlprd as a daemon.  Usually not needed.
+.TP
+.I \-p, \-\-port=number
+Select an alternate port (instead of 7290) to listen on.  Usually not
+needed.
+.TP
+.I \-q, \-\-quiet, \-\-silent
+Quiet mode \- stay quiet (except for fatal errors).
+.TP
+.I \-t  \-\-timeout=seconds
+Set the inactivity timer.  If the connection hangs for more than
+\fBseconds\fP seconds, then \fBrlprd\fP will time out the connection.
+Use the special value `-1' to wait forever.  Default timeout is 3
+seconds.
+.TP
+.I \-V, \-\-version
+Print version and exit.
+.SH "SEE ALSO"
+\fBrlpr\fP(1), \fBrlpq\fP(1), \fBrlprm\fP(1), \fBrlprrc\fP(5)
+.SH AUTHOR
+meem <meem@gnu.org>
+.SH BUGS/LIMITATIONS
+It is not currently possible to run \fBrlprd\fP from \fBinetd\fP(8).
+

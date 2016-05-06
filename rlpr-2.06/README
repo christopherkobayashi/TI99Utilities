@@ -1,0 +1,313 @@
+SCCS "@(#)README	1.3	01/01/02 meem"
+
+This README goes with the rlpr package.  It discusses how to get going
+with rlpr.  For information on how to install rlpr, please see INSTALL
+and INSTALL.generic.  For a list of recent changes, see CHANGES.
+
+What is rlpr?
+=============
+
+It is a package that makes it possible (or at the very least, easier),
+to print files on remote sites to your local printer.  The rlpr
+package includes BSD-compatible replacements for `lpr', `lpq', and
+`lprm', whose functionality is a superset of their BSD counterparts.
+In other words, with the rlpr package, you can do everything you can
+do with the BSD printing commands, and more.  The programs contained
+within the rlpr package are all GPL'd, and are more lightweight,
+cleaner and more secure than their BSD counterparts.
+
+
+Is rlpr a full replacement for BSD lpr?
+=======================================
+
+Not yet.  At this point, you still need the BSD utilities `lptest',
+`lpc' and (most importantly) `lpd', although you no longer need to run
+`lpd' locally to print to a printer on a remote machine.  However, you
+can completely dispose of `lpr', `lpq', and `lprm', as the rlpr
+versions of these commands are backward compatible and open source.
+The rlpr versions of these commands are clean-room implementations,
+and contain no proprietary source code (although there is bug-for-bug
+compatibility where necessary, which was obtained by examining network
+traffic).
+
+
+Will rlpr become a full replacement for BSD lpr?
+================================================
+
+Maybe.  The primary goal of the rlpr project has been to produce a
+high-quality remote printing software suite that makes it easier for
+users to get their job done.  However, now that this goal has been
+ostensibly accomplished, it may be time to write `lpd', `lptest' and
+`lpc'.  Note that this is not a small task; most of the real work
+in the printing subsystem is done by `lpd'.
+
+
+How do I use rlpr?
+==================
+
+There are two separate ways that rlpr can be installed, and
+consequently two different ways it can be used.  Please see INSTALL
+for a discussion on the two installation methods and which one is
+appropriate for your situation.  Once you have decided on an
+installation approach, follow the appropriate set of instructions
+here.
+
+Using rlpr in a non-proxy configuration
+---------------------------------------
+
+Without any configuration, you should be able to print to your printer
+by issuing this command on the machine you wish to print from:
+
+$ who | rlpr --printer=your_printer@your_host
+
+This should print the output of the who(1) command to your printer.
+Make sure you use the right case when specifying the printer because
+the name is case sensitive.  If no output results, please consult
+the troubleshooting section at the end of this README.
+
+Since it is a hassle to constantly specify the host and printer on the
+command line, rlpr offers you a few alternatives:
+
+  1. You can set these with environment variables when you log in.
+     The environment variables RLPR_PRINTHOST and PRINTER control
+     what host and printer to use by default.  This is probably good
+     enough for most configurations.
+
+  2. You can use the `printer@hostname' syntax for the PRINTER or
+     LPDEST variables, as documented in rlpr(1), to specify both
+     components in one variable.  This works well for many setups
+     too, but has the unfortunate consequence of confusing programs
+     which expect PRINTER to just contain the name of your printer.
+
+  3. You can just specify `printer' in your PRINTER or LPDEST
+     variables, and not set RLPR_PRINTHOST, at which point rlpr
+     will assume that RLPR_PRINTHOST is implicitly your local
+     machine.  This is convenient for those who just want rlpr as
+     a replacement for the BSD lpr commands.
+
+  4. If you plan on printing to many different printers, you can
+     make an .rlprrc file, or if you are a system administrator
+     providing defaults for many different users, you can make an
+     /etc/rlprrc file.  Please see rlprrc(5) for more details on
+     this option.
+
+Using rlpr in a a proxy configuration
+-------------------------------------
+
+Without any configuration, you should be able to print to your printer
+by issuing this command on the machine you wish to print from:
+
+% who | rlpr --printer=your_printer@your_host --proxyhost=your_proxy
+
+This should print the output of the who(1) command to your printer,
+using your_proxy as the proxyhost.  Make sure you use the right case
+when specifying the printer because the name is case sensitive.
+
+Note that you of course need a machine running the rlprd proxy before
+the above command will succeed.  To do this, first find a machine you
+can install rlprd setuid root on.  Often, this will be the same as the
+machine you want to print to, but it need not be.  Compile rlprd on
+that machine, and start it by just typing `rlprd' on that machine.
+You will probably want to have rlprd running all the time -- to do
+this, you will need to put it in that machine's boot-time scripts.
+
+Since it is a hassle to constantly specify the host and printer on the
+command line, rlpr offers you a few alternatives:
+
+  1. You can set these with environment variables when you log in.
+     The environment variables RLPR_PRINTHOST and PRINTER control
+     what host and printer to use by default.  The environment
+     variable RLPR_PROXYHOST controls what proxyhost to use by
+     default. This is probably good enough for most configurations.
+
+  2. You can use the `printer@hostname' syntax for the PRINTER or
+     LPDEST variables, as documented in rlpr(1), to specify both
+     components in one variable.  This works well for many setups
+     too, but has the unfortunate consequence of confusing programs
+     which expect PRINTER to just contain the name of your printer.
+     You will additionally (of course) need to set the name of your
+     proxyhost in the environment variable RLPR_PROXYHOST, as in
+     option 1.
+
+  3. If you plan on printing to many different printers, you can
+     make an .rlprrc file, or if you are a system administrator
+     providing defaults for many different users, you can make an
+     /etc/rlprrc file.  Please see rlprrc(5) for more details on
+     this option.  You will additionally (of course) need to set
+     the name of your proxyhost in the environment variable
+     RLPR_PROXYHOST, as in option 1.
+
+
+Troubleshooting
+===============
+
+  1. If you are getting errors about rlpr not being able to bind to
+     a privileged port, and you cannot make rlpr setuid root, you need
+     to use the rlprd proxy.  Follow the instructions for setting up
+     rlprd, see INSTALL, rlpr(1) and rlprd(8).
+
+  2. Turn on debugging.  For the client, you can do this by specifying
+     the --debug option on the commandline.  This should give you a
+     clue what's going wrong.  If you use rlprd, you can also use its
+     --debug.  However, this will fill up your syslog with gobs of
+     debugging information.  To avoid this, start rlprd with both
+     --no-daemon and --debug, so that it won't become a daemon.
+
+  3. Check the syslog on the machine with the lpd server and look for
+     any obvious problems there.
+
+  4. If you are using a proxy, check the syslog on the machine with
+     rlprd and look for any obvious problems there.
+
+  5. If you get something like:
+
+	rlpr: error: check_ack: lpd refused our job request [error 108]
+	      -- is our hostname in its hosts.lpd?
+	rlpr: fatal error: unable to send job request to lpd
+
+     It is likely the /etc/hosts.lpd or /etc/hosts.equiv on the lpd
+     server does not list the machine you're printing from.  There is
+     a shell script called `check-server.sh' provided with this
+     distribution which attempts to sniff out problems associated with
+     your lpd server configuration.  The script is quite new and as a
+     result still quite rudimentary; however, it will detect simple
+     misconfigurations when run on the lpd server.
+
+     The easiest way to solve server configuration problems is to
+     carefully follow the instructions in INSTALL regarding server
+     configuration.
+
+     Remember that most LPD's will have to be restarted to force them
+     to reread the /etc/hosts.lpd file.
+
+     Some really twisted LPD's will reject print jobs because a given
+     printer is out of paper.  Note that this has caused more than one
+     person needless pain and suffering.
+
+     Lastly, make sure that the printer you specified actually exists!
+
+  6. Check the LPD's documentation for any known limitations.
+
+  7. Send mail to meem@gnu.org with a bug report.  Please include
+     the machine(s) you're running rlpr and rlprd under, and the version
+     of rlpr you're using.  If you are having problems getting the
+     package to compile, please include the name and version of the
+     compiler and related tools.
+
+
+Known problems/issues with rlpr
+===============================
+
+The rlpr package requires an ANSI C compiler; this means you will not
+be able to build the package the standard SunOS 4.x compiler (for
+example).  ANSI C is more than 10 years old at this point; I am not
+planning to make rlpr portable between ANSI C and K&R C; upgrade your
+compiler.
+
+The rlpr package will not build properly out-of-the-box using the
+native development tools on many Ultrix machines due a non-POSIX
+seteuid().  This problem can reportedly be worked around by compiling
+with `cc -YPOSIX -Dinline='.
+
+The rlpr package will not build properly out-of-the-box using the
+native development tools on HP/UX 10 due to C compiler braindamage.
+This problem can reportedly be worked around by compiling with `cc
+-Ae'.
+
+Note that in both cases, the C compiler settings must be changed prior 
+to running ./configure, or problems may arise.  Once again, using
+GNU development tools is highly recommended.
+
+
+Known problems with LPDs
+========================
+
+Microsoft's LPD cannot handle rlpr's standard way of sending multiple
+print jobs.. to get the desired result please use the --windows option
+(see rlpr(1) for details).. please don't use this switch unless you
+really are connecting to one of these braindamaged LPD's, because it
+will tie up extra sockets.
+
+Additionally, Windows NT 4.0 apparently requires that you pass the -l
+option along with -o when printing postscript.  Thanks to Allan Wind
+for reporting this.  I would enable -l with -o by default when
+printing with --windows, but only 4.0 seems to have this problem.
+
+Hummingbird's NT lpd client will not print postscript correctly unless
+it is configured to run in "raw" mode.  You can select this through
+the LPD's preferences menu under Windows.
+
+Many LPD's will merrily pass through postscript data unless explicitly
+told it is postscript.  To get postscript documents to print right,
+please use the -o option (see rlpr(1) for details).
+
+Some LPD's no longer have any troff support.  To print documents you
+might have printed using the -t option, you could use:
+
+  % groff -Tps filename | rlpr -o
+
+
+Where to get the latest version
+===============================
+
+The latest stable version of rlpr can be obtained from:
+  ftp://truffula.com/pub/rlpr-x.xx.tar.gz
+
+The latest beta version of rlpr can be obtained from:
+  ftp://truffula.com/pub/beta/rlpr-x.xx-x.tar.gz
+
+Please do not use a beta version unless you have a good reason.  They
+may contain flaws and inconsistencies which can lead to security holes.
+
+Daniel Schepler graciously put together a Red Hat package for rlpr
+1.50, which I will update with each release of rlpr.  The most recent
+x86 and source RPMs can be found at:
+
+  ftp://contrib.redhat.com/contrib/libc6/i386/rlpr-x.xx-x.i386.rpm
+  ftp://contrib.redhat.com/contrib/libc6/SRPMS/rlpr-x.xx-x.src.rpm
+
+The Debian Project has also graciously put together an rlpr package.
+The latest version can be found at:
+
+  ftp://ftp.debian.org/pub/debian/dists/{un,}stable/main/*/net/
+
+Please note that stable and unstable does not refer to the rlpr
+package itself, but whether or not the Debian Distribution it is
+included with has been released.  
+
+If you have questions or comments that relate directly to the Debian
+package, please send mail to debian-user@lists.debian.org for
+assistance.  This is a mailing list one can join to by sending mail to
+debian-user-REQUEST@lists.debian.org with the word "subscribe" in the
+subject.
+
+
+Supported Operating Systems
+===========================
+
+The rlpr source is considered quite portable and in fact has in the
+past been patched to work on non-Unix POSIX.1 environments such as
+MVS.  Note that both the operating system features *and* the
+development tools (such as cc, make, and so forth) determine whether
+rlpr will build and operate correctly on a given system.
+
+Currently, rlpr is only tested with GNU development tools.  While care
+has been taken to avoid nonportable constructs wherever possible,
+using GNU development tools is *strongly* recommended.  However, if
+you must use other development tools and encounter problems, please
+report them so that the issues can be addressed (if possible).
+
+The rlpr package has been reported to work on the current mainstream
+releases of Linux, Solaris, Irix, HP/UX, FreeBSD, NetBSD, OpenBSD,
+AIX, Digital Unix (Tru64) and HURD.  If you have problems getting this
+release to work on one of those systems, or have information regarding
+other systems (including changes required to make rlpr work), please
+send the information along to meem@gnu.org.
+
+
+Ideas, comments, suggestions
+============================
+
+I am always looking for ways to improve rlpr.  If you have
+suggestions, bugfixes or just general comments, please send mail to
+meem@gnu.org.

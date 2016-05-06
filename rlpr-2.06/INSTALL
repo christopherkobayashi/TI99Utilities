@@ -1,0 +1,107 @@
+SCCS "%Z%%M%	%I%	%E% meem"
+
+This file is part of the rlpr package.  It discusses how to install
+rlpr on your computer network(s).  Although installing the rlpr
+package is not particularly complicated, it is not obvious either;
+please take the time to read these instructions -- you will be glad
+you did.
+
+This file and INSTALL.generic make up the complete installation
+instructions for the rlpr package.  INSTALL.generic contains the
+standard GNU autoconf installation instructions; if you're already
+familiar with GNU autoconf, you can safely ignore INSTALL.generic.
+
+This file does not discuss what rlpr is and how to use it; for that
+information, please see README or the appropriate manpages.
+
+
+How do I install rlpr?
+======================
+
+How you install the rlpr package depends largely on whether you have
+root access on the machine(s) you want to print from.  In any case,
+the programs `rlpr', `rlpq', and `rlprm' will need to be installed on
+each machine you wish to print from.  If you do not have root access
+on the machine you want to print from, you will also need to install
+`rlprd' on a networked machine that you do have root access on.
+
+The reason root access matters is because traditionally `rlpr', `rlpq'
+and `rlprm' need to be installed setuid root to contact the remote
+`lpd' that you wish to print to.  When possible, installing `rlpr',
+`rlpq' and `rlprm' setuid root is highly recommended, since it is a
+simpler and more intuitive configuration.
+
+If you do not have root access on the machine you wish to print from
+or if installing setuid root programs makes you uncomfortable (and it
+well might), you should follow the instructions for the case where one
+does not have root access.  In this case, you will need to set up an
+rlprd proxy somewhere on your network.
+
+In either case, make sure you read `General Instructions' afterwards,
+since it contains useful information pertinent in either installation
+scenario.
+
+
+Installation for those with root access
+=======================================
+
+In this case, the steps are:
+
+	1. unpack the distribution on the machine you wish to print from
+	2. `cd rlpr-2.06'
+	3. `su' to root
+	4. `./configure' (pass whatever options you need, like --prefix)
+	5. `make install-setuid'
+	6. read the `General Instructions' section below
+
+
+Installation for those without root access
+==========================================
+
+In this case, the steps are:
+
+	1. unpack the distribution on the machine you wish to print from
+	2. `cd rlpr-2.06'
+	3. `./configure' (pass whatever options you need, like --prefix)
+	4. `make install'
+	5. unpack the distribution on the machine you wish to run rlprd
+	   on (you must have root access on that machine and it must
+	   be network-accessible; probably the machine you want to
+	   print to). 
+	6. `cd rlpr-2.06'
+	7. `./configure' (pass whatever options you need, like --prefix)
+	8. `su' to root
+	9. `make install-proxy'
+	10. `rlprd'
+	11. read the `General Instructions' section below
+
+
+General Instructions
+====================
+
+The machine you wish to print to must be configured to permit requests
+from the machine(s) you wish to print from.  Under Unix, this is done
+by including the IP addresses of the hosts you wish to print from in
+the /etc/hosts.lpd file on the machine you wish to print to.  Please
+note that in the case of a proxy configuration, the machine your
+printing "from" is the machine running the proxy, not the machine the
+request originates from.
+
+Note that the host-based lpd security is quite weak; there's
+unfortunately little anyone can do about it.  In general, we can only
+hope that malicious users will not send print jobs to other user's
+printers -- there's nothing we can do to stop them.
+
+
+Installing BSD symlinks
+=======================
+
+Since the `rlpr' `rlpq' and `rlprm' commands are complete replacements
+for their BSD counterparts, the BSD commands by these names can be
+actually replaced by symlinks to the rlpr versions.  When the rlpr
+commands are invoked with their BSD names, they will act like their
+BSD counterparts (the `--verbose' option can be used to restore their
+traditional behavior).
+
+To install the BSD symlinks, just type `make bsd-symlinks' after
+installing the rlpr package (note that you must of course be root).

@@ -1,0 +1,109 @@
+dnl Copyright (c) 1998-1999 peter memishian (meem), meem@gnu.org
+dnl
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2, or (at your option)
+dnl any later version.
+dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+dnl General Public License for more details.
+dnl
+dnl SCCS "%Z%%M%	%I%	%E% meem"
+dnl
+
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT
+AC_CONFIG_SRCDIR([src/rlpr.c])
+AM_CONFIG_HEADER(config.h)
+
+AM_INIT_AUTOMAKE(rlpr, "2.06")
+AC_PREFIX_PROGRAM(rlpr)
+
+dnl Set of available languages
+ALL_LINGUAS=
+
+dnl Checks for programs.
+AC_PROG_INSTALL
+AC_PROG_CC
+AC_PROG_CPP
+AC_PROG_LN_S
+
+dnl NLS support -- macro is included with gettext 0.10.30+
+AM_GNU_GETTEXT
+
+dnl Checks for libraries.
+AC_CHECK_LIB(nsl, gethostbyname)
+AC_CHECK_LIB(socket, socket)
+
+dnl Checks for header files.
+AC_HEADER_STDC
+AC_HEADER_SYS_WAIT
+AC_CHECK_HEADERS(libintl.h string.h limits.h select.h sys/select.h)
+
+dnl Custom check for location of MAXHOSTNAMELEN
+AC_MSG_CHECKING([where MAXHOSTNAMELEN is defined])
+AC_EGREP_CPP([yes],
+[
+#include <netdb.h>
+#ifdef MAXHOSTNAMELEN
+yes
+#endif
+], [AC_DEFINE(R_MAXHOSTNAMELEN_HDR,<netdb.h>) AC_MSG_RESULT(<netdb.h>)],
+   [AC_DEFINE(R_MAXHOSTNAMELEN_HDR,<sys/param.h>) AC_MSG_RESULT(<sys/param.h>)
+])
+
+dnl Custom check for definition of EXIT_SUCCESS/EXIT_FAILURE
+AC_MSG_CHECKING([whether EXIT_SUCCESS and EXIT_FAILURE are defined])
+AC_EGREP_CPP([yes],
+[
+#include <stdlib.h>
+#ifdef EXIT_SUCCESS
+yes
+#endif
+], [AC_MSG_RESULT(yes)],
+   [AC_DEFINE(EXIT_SUCCESS,0) AC_DEFINE(EXIT_FAILURE,1) AC_MSG_RESULT(no)]
+)
+
+dnl Custom check for the size of an off_t
+AC_MSG_CHECKING([whether off_t is a long or a longlong])
+AC_RUN_IFELSE([AC_LANG_SOURCE([[
+#include <sys/types.h>
+int main() { return sizeof (long) != sizeof (off_t); }
+]])],[AC_DEFINE(R_OFF_T_FMT, "%ld")  AC_MSG_RESULT(long)],[AC_DEFINE(R_OFF_T_FMT, "%lld") AC_MSG_RESULT(long long)],[AC_DEFINE(R_OFF_T_FMT, "%ld")  AC_MSG_RESULT([(guessed) long])
+])
+
+dnl Custom check for h_errno in <netdb.h>
+AC_MSG_CHECKING([whether h_errno is declared (in <netdb.h>)])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <netdb.h>]], [[int i = h_errno;]])],[AC_DEFINE(H_ERRNO_DECLARED) AC_MSG_RESULT(yes)],[AC_MSG_RESULT(no)
+])
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_TYPE_PID_T
+AC_TYPE_OFF_T
+AC_TYPE_SIZE_T
+AC_CHECK_TYPE(ssize_t, long int)
+AC_TYPE_SIGNAL
+AC_C_CONST
+AC_C_INLINE
+
+dnl Checks for library functions.
+dnl
+dnl TODO: expand this list as we get experience with what's commonly
+dnl	  missing from various UNIX variants.  Also, read through the
+dnl	  autoconf documentation more carefully to get a feel for
+dnl	  what's commonly missing.
+dnl
+dnl vprintf is here because lib/error.c compiles differently depending
+dnl on its presence.  rlpr doesn't currently make use of it otherwise.
+dnl
+AC_FUNC_ALLOCA
+AC_CHECK_FUNCS(strerror seteuid setreuid vprintf setresuid strdup strstr)
+AC_CHECK_FUNCS(strchr getopt_long strcasecmp strtoul strtol vsyslog)
+
+AC_REPLACE_FUNCS(strdup strstr strcasecmp)
+AC_CHECK_FUNC(getopt_long,, AC_LIBOBJ([getopt1]) AC_LIBOBJ([getopt]))
+
+AC_CONFIG_FILES([Makefile lib/Makefile src/Makefile intl/Makefile man/Makefile po/Makefile.in])
+AC_OUTPUT

@@ -1,0 +1,23 @@
+TODO list
+---------
+
+* write an autoconf test for the last arguments to getsockopt() and
+  getsockname().
+* upgrade development environment past automake 1.4 and autoconf 2.13;
+  see if any custom macros can go away.
+* alert user as to number of copies being made?
+* flag for just doing `direct from stdin' for platforms that can support it?
+* add back SYSLOG_UNUSABLE code if it turns out it's still needed.
+* any way to interpret errors from lpd, even hueristically?!
+* maybe control-c should be bound such that it attempts to abort the job?
+* inetd support for rlprd
+* use ChangeLog
+* fix ultrix and seteuid
+* write automated regression testsuite
+* multiple timeout values (connect/write/read?)
+* support writeback for hpux
+* fix `version' so that any recompiled file will result in an updated version
+  string.
+* some lpd's require that the hostname provided with H be a lowercase
+  FQDN (even though this is not in the spec); consider adding support.
+* aliasing feature for printer names?
