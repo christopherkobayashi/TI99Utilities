@@ -29,11 +29,11 @@ def main(argv=None):
     speed = 0
     device = ""
     directory = "./"
-    discard_junk = 0
     filter = ""
+    junk_seen = 0
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hjd:s:f:n:j", ["help", "device=", "speed=", "filter=", "directory=", "discard_junk"]) 
+        opts, args = getopt.getopt(sys.argv[1:], "hjd:s:f:n:", ["help", "device=", "speed=", "filter=", "directory="]) 
     except getopt.GetoptError as err:
 	usage()
     for o, a in opts:
@@ -45,8 +45,6 @@ def main(argv=None):
 	    filter = a
 	if o in ("-n", "--directory"):
 	    directory = a
-	if o in ("-j", "--discard_junk"):
-	    discard_junk = 1
 
     if speed == 0 or device == "":
 	usage()
@@ -68,10 +66,19 @@ def main(argv=None):
 
         print "printer listener listening"
         while not line:
-	    sleep(5)
 	    line = ser.read(1)
-	    if line == chr(0xff) and discard_junk:
-	        line = ""
+	    if line == "":
+		if junk_seen == 1:
+		    print "junk ended, safe to print"
+		    junk_seen = 0
+		continue
+	    if (line != chr(0xff) and line != chr(0xf8)):
+	        break
+	    else:
+		if not junk_seen:
+		    print "junk received, do not print"
+		    junk_seen = 1
+		line = ""
 
         print "printer active"
         now = datetime.datetime.now()
@@ -80,7 +87,7 @@ def main(argv=None):
         f = open(received_file, "wb")
 
         while line:
-  	    print line
+#  	    print line
 	    f.write(line)
 	    line = ser.read(10)
 
